@@ -18,7 +18,8 @@ the datbase is huge, this limits the area the query is performed in.
 The filters do the real work of this format. The *tags* keyword is
 followed by the desired geometry, which determine which database
 tables get searched. If *all_geometry* is supplied, then all the
-tables are queried.
+tables are queried. It can also be *centroid*, which then returns onl
+points.
 
 The syntax is the same for the **join_or** keyword, or the
 **join_and** keyword. It's a list of keyword/value pairs. If it's an

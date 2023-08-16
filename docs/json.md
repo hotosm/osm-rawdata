@@ -27,20 +27,15 @@ empty list, this is the equivalant of using *IS NOT NULL* in SQL. If
 it has a value instead, then only features with that value are
 returned.
 
-## Geometry type
+## Centroid
 
-There are 3 supported geomtry types. These map to output geometries
-in the database. This is not used by projects other than the Export
-Tool.
-
-* point
-* line
-* polygon
+This is true or false on whether the result should only be centroids
+of all the geometries. The default is false if this is not present.
 
 # Example
 
 Unlike the [YAML](yaml) format that generates an SQL query, the raw
-data API wants this JSON file. This can ben generated however from the
+data API wants this JSON file. This can be generated however from the
 YAML config file. If used as a config file, an identical version is
 generated from the parsed config data. This way it can be used for
 both input and output.
@@ -75,9 +70,4 @@ This config file is for highway extracts.
 				}
 			}
 		},
-		"geometryType": [
-		  "point",
-		  "Line",
-		  "polygon"
-		]
 	}

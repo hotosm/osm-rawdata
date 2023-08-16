@@ -34,7 +34,6 @@ jobs:
 
       - name: Push content to wiki
         run: |
-          apt update && apt install -y rsync
           rsync -av --delete docs/ tmp_wiki/ --exclude .git
           cd tmp_wiki
           git add .

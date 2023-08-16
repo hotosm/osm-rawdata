@@ -154,11 +154,11 @@ class DatabaseAccess(object):
         # data = yaml.load(file, Loader=yaml.Loader)
 
         feature = dict()
-        feature['geometry'] = boundary
+        feature["geometry"] = boundary
 
         filters = dict()
-        filters['tags'] = dict()
-        filters['tags']['all_geometry'] = dict()
+        filters["tags"] = dict()
+        filters["tags"]["all_geometry"] = dict()
         geometryType = list()
         for table in config.config['tables']:
             if table == 'nodes':
@@ -167,29 +167,37 @@ class DatabaseAccess(object):
                 geometryType.append('line')
             if table == 'way_poly':
                 geometryType.append('polygon')
-        feature.update({"geometryType": geometryType})
+        # feature.update({"geometryType": geometryType})
 
         # The database tables to query
         # if tags exists, then only query those fields
         select = ""
-        filters['tags']['all_geometry']["join_or"] = dict()
-        filters['tags']['all_geometry']["join_and"] = dict()
         for entry in config.config['where']:
             for k, v in entry.items():
+                valitem = list()
+                if v == 'not null':
+                    valitem = [v]
                 select += f"\"{k}\": [],"
                 if k == 'op':
                     continue
                 if entry['op'] == 'or':
-                    filters['tags']['all_geometry']["join_or"].update({k: v})
+                    if 'join_or' not in filters["tags"]["all_geometry"]:
+                        filters["tags"]["all_geometry"]["join_or"] = dict()
+                    filters["tags"]["all_geometry"]["join_or"].update({k: valitem})
                 elif entry['op'] == 'and':
-                    filters['tags']['all_geometry']["join_and"].update({k: v})
+                    if 'join_and' not in filters["tags"]["all_geometry"]:
+                        filters["tags"]["all_geometry"]["join_and"] = dict()
+                    filters["tags"]["all_geometry"]["join_and"].update({k: valitem})
         feature.update({"filters": filters})
-        print(feature['filters'])
+        # FIXME: obviously for debugging
+        # print(feature['filters'])
+        xxx =  open('xxx.json', 'w')
+        json.dump(feature, xxx, indent=2)
         return json.dumps(feature)
+        # return feature
 
     def createSQL(self,
                   config: QueryConfig,
-                  boundary: str = None,
                   allgeom: bool = True,
                   ):
         sql = list()
@@ -230,9 +238,9 @@ class DatabaseAccess(object):
         return sql
 
     def queryLocal(self,
-                   config: QueryConfig,
+                   query: str,
                    allgeom: bool = True,
-                   boundary: str = None,
+                   boundary: Polygon = None,
                    ):
         """Query a local postgres database"""
         features = list()
@@ -340,38 +348,32 @@ class PostgresClient(DatabaseAccess):
         log.info("Query returned %d records" % len(result))
 
     def execQuery(self,
-                    boundary: str,
+                    boundary: FeatureCollection,
                     customsql: str = None,
-                    polygon: bool = True,
+                    allgeom: bool = True,
                     ):
         """Extract buildings from Postgres"""
         log.info("Extracting features from Postgres...")
 
-        if type(boundary) != dict:
-            clip = open(boundary, "r")
-            geom = geojson.load(clip)
-            if 'features' in geom:
-                poly = geom['features'][0]['geometry']
-            else:
-                poly = geom["geometry"]
+        if 'features' in boundary:
+            # FIXME: ideally this shyould support multipolygons
+            poly = boundary['features'][0]['geometry']
         else:
-            poly = boundary
+            poly = boundary["geometry"]
         wkt = shape(poly)
 
         config = 'buildings'    # FIXME
         if self.dbshell:
             if not customsql:
-                sql = self.createSQL(self.qc, poly, polygon)
+                sql = self.createSQL(self.qc, allgeom)
             alldata = list()
             for query in sql:
-                result = self.queryLocal(query, wkt)
+                result = self.queryLocal(query, allgeom, wkt)
                 if len(result) > 0:
                     alldata.append(result)
             collection = FeatureCollection(alldata)
         else:
-            request = self.createJson(self.qc, poly, polygon)
-            with open("xxx.json", 'w') as foo:
-                json.dump(request, foo, indent=4)
+            request = self.createJson(self.qc, poly, allgeom)
             collection = self.queryRemote(request)
         return collection
 
@@ -443,15 +445,18 @@ Optionally a data file can be used.
         ch.setFormatter(formatter)
         log.addHandler(ch)
 
-    
+    infile = open(args.boundary, 'r')
+    poly = geojson.load(infile)
     if args.uri is not None:
         log.info("Using a Postgres database for the data source")
         pg = PostgresClient(args.uri, args.config)
         if args.sql:
             sql = open(args.sql, 'r')
-            pg.execQuery(args.boundary, sql.read())
+            result = pg.execQuery(poly, sql.read())
+            log.info("Query returned %d records" % len(result))
         else:
-            pg.execQuery(args.boundary)
+            result = pg.execQuery(poly)
+            log.info("Query returned %d records" % len(result))
 
         # pg.cleanup(outfile)
 

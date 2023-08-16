@@ -35,7 +35,7 @@ The syntax is the same for the **join_or** keyword, or the
 **join_and** keyword. If you want to query for any value of the
 keyword, ass *not_null*, which later gets turned into *IS NOT NULL* in
 SQL. It has a value associated with the keyword, then that is the only
-value searechihng for.
+value searching for.
 
 ## keep
 
@@ -70,7 +70,11 @@ This config file is for building extracts.
 		- diesel
 		- version
 
-That then generates this SQL query:
+That then generates a list of SQL queries, one for each table in the
+database. Note that the table name has been changed to have *_view*
+appended. This is because a view has been created from each table
+using the project boundary.
+
 
 	SELECT ST_AsText(geom), osm_id, version, tags->>'building:levels',
 		tags->>'building:material', tags->>'roof:material',

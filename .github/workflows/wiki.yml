@@ -12,7 +12,8 @@ env:
   USER_TOKEN: ${{ secrets.WIKI_DEPLOY_TOKEN }}
   USER_NAME: svcfmtm
   USER_EMAIL: fmtm@hotosm.org
-  ORG: ${{ github.event.repository.owner.name }}
+#   ORG: ${{ github.event.repository.owner.name }}
+  ORG: hotosm
   REPO_NAME: ${{ github.event.repository.name }}
 
 jobs:

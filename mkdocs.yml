@@ -1,0 +1,9 @@
+site_name: osm-rawdata
+site_url: https://github.com/hotosm/osm-rawdata/wiki
+nav:
+  - Home: Home.md
+  - About: about.md
+
+plugins:
+  - search
+  - mkdocstrings

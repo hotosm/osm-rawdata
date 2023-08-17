@@ -49,6 +49,12 @@ class QueryConfig(object):
     def __init__(self,
                  boundary: Polygon = None
                  ):
+        """This class parses a config file that defines the Query
+        into data structure.
+        
+        Args:
+                boundary (Polygon): The project boundary
+        """
         self.config = {'select': list(),
                         'tables': list(),
                         'where': list(),
@@ -61,6 +67,16 @@ class QueryConfig(object):
     def parseYaml(self,
                     filespec: str
                     ):
+        """
+        This method parses the YAML config file format into our internal
+        data structure.
+
+        Args:
+                filespec (str): the file to read
+
+        Returns:
+                config (dict): the config data
+        """
         file = open(filespec, 'r')
         path = Path(filespec)
         data = yaml.load(file, Loader=yaml.Loader)
@@ -104,8 +120,17 @@ class QueryConfig(object):
     def parseJson(self,
                   filespec: str
                   ):
-        """Parse the JSON format config file used by the raw-data-api
-        and export tool."""
+        """
+        Parse the JSON format config file used by the raw-data-api
+        and export tool.
+
+        Args:
+                filespec (str): the file to read
+
+        Returns:
+                config (dict): the config data
+        """
+
         file = open(filespec, 'r')
         data = json.load(file)
         # Get the geometry
@@ -159,6 +184,9 @@ class QueryConfig(object):
         return self.config
 
     def dump(self):
+        """
+        Dump the contents of the internal data strucute for debugging purposes
+        """
         print("Dumping QueryConfig class")
         print("Select: ")
         for entry in self.config['select']:
@@ -192,7 +220,8 @@ class QueryConfig(object):
         if self.geometry:
             print(self.geometry)
     
-def main():    
+def main():
+    """This main function lets this class be run standalone by a bash script"""
     parser = argparse.ArgumentParser(
         prog="config",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -235,4 +264,5 @@ def main():
     config.dump()
 
 if __name__ == "__main__":
+    """This is just a hook so this file can be run standlone during development."""
     main()

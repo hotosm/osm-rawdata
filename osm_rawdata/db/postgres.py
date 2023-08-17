@@ -50,7 +50,16 @@ rootdir = he.__path__[0]
 log = logging.getLogger(__name__)
 
 def uriParser(source):
-    """Parse a URI into it's components"""
+    """
+    Parse a URI into it's components
+
+    Args:
+        source (str): The URI string for the database connection
+
+    Returns:
+        db (dict): The URI split into components
+    
+    """
     dbhost = None
     dbname = None
     dbuser = None
@@ -112,6 +121,14 @@ class DatabaseAccess(object):
     def __init__(self,
                  dburi: str,
                  ):
+        """
+        This is a class to setup a database connection
+        
+        Args:
+            dburi (str): The URI string for the database connection
+        Returns:
+            status (bool): Whether the data base connection was sucessful    
+        """
         self.dbshell = None
         self.dbcursor = None
         uri = uriParser(dburi)
@@ -141,18 +158,28 @@ class DatabaseAccess(object):
                 self.dbcursor = self.dbshell.cursor()
                 if self.dbcursor.closed == 0:
                     log.info(f"Opened cursor in {uri['dbname']}")
+                    return True
             except Exception as e:
                 log.error(f"Couldn't connect to database: {e}")
+        return False
 
     def createJson(self,
                    config: QueryConfig,
                    boundary: Polygon,
                    allgeom: bool = False
                    ):
-        # path = xlsforms_path.replace("xlsforms", "data_models")
-        # file = open(f"{path}/{category}.yaml", "r").read()
-        # data = yaml.load(file, Loader=yaml.Loader)
+        """
+        This class generates a JSON file, which is used for remote access
+        to an OSM raw database using the Underpass schema.
 
+        Args:
+            config (QueryConfig): The config data from the query config file
+            boundary (Polygon): The boundary polygon
+            allgeom (bool): Whether to return centroids or all the full geometry
+                
+        Returns:
+                query (FeatureCollection): the json
+        """
         feature = dict()
         feature["geometry"] = boundary
 
@@ -189,17 +216,22 @@ class DatabaseAccess(object):
                         filters["tags"]["all_geometry"]["join_and"] = dict()
                     filters["tags"]["all_geometry"]["join_and"].update({k: valitem})
         feature.update({"filters": filters})
-        # FIXME: obviously for debugging
-        # print(feature['filters'])
-        xxx =  open('xxx.json', 'w')
-        json.dump(feature, xxx, indent=2)
         return json.dumps(feature)
-        # return feature
 
     def createSQL(self,
                   config: QueryConfig,
                   allgeom: bool = True,
                   ):
+        """
+        This class generates the SQL to query a local postgres database.
+
+        Args:
+            config (QueryConfig): The configf data from the query config file
+            allgeom (bool): Whether to return centroids or all the full geometry
+                
+        Returns:
+                query (FeatureCollection): the json
+        """
         sql = list()
         select = "SELECT "
         if allgeom:
@@ -242,7 +274,17 @@ class DatabaseAccess(object):
                    allgeom: bool = True,
                    boundary: Polygon = None,
                    ):
-        """Query a local postgres database"""
+        """
+        This query a local postgres database.
+
+        Args:
+            query (str): The SQL query to execute
+            allgeom (bool): Whether to return centroids or all the full geometry
+            boundary (Polygon): The boundary polygon
+                
+        Returns:
+                query (FeatureCollection): the results of the query
+        """
         features = list()
         sql = f"DROP VIEW IF EXISTS ways_view;CREATE VIEW ways_view AS SELECT * FROM ways_poly WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
         self.dbcursor.execute(sql)
@@ -287,6 +329,15 @@ class DatabaseAccess(object):
     def queryRemote(self,
                     query: str = None
                     ):
+        """
+        This queries a remote postgres database using the FastAPI
+        backend to the HOT Export Tool.
+
+        Args:
+            query (str): The SQL query to execute
+        Returns:
+            data (FeatureCollection): the results of the query
+        """
         url = f"{self.url}/snapshot/"
         result = self.session.post(url, data=query, headers=self.headers)
         if result.status_code != 200:
@@ -319,7 +370,16 @@ class PostgresClient(DatabaseAccess):
                  config: str,
                  #output: str = None
     ):
-        """Initialize the database handler"""
+        """
+        This is a client for a postgres database.
+
+        Args:
+            dburi (str): The URI string for the database connection
+            config (str): The filespec for the query config file
+
+        Returns:
+            status (bool): Whether the data base connection was sucessful
+        """
         super().__init__(uri)
         # Load the config file for the SQL query
         path = Path(config)
@@ -335,6 +395,15 @@ class PostgresClient(DatabaseAccess):
     def createDB(self,
                  dburi: uriParser
                  ):
+        """
+        Setup the postgres database connection.
+
+        Args:
+            dburi (str): The URI string for the database connection
+
+        Returns:
+            status (bool): Whether the data base connection was sucessful
+        """
         sql = f"CREATE DATABASE IF NOT EXISTS {self.dbname}"
         self.dbcursor.execute(sql)
         result = self.dbcursor.fetchall()
@@ -346,13 +415,25 @@ class PostgresClient(DatabaseAccess):
         self.dbcursor.execute(sql)
         result = self.dbcursor.fetchall()
         log.info("Query returned %d records" % len(result))
+        return True
 
     def execQuery(self,
                     boundary: FeatureCollection,
                     customsql: str = None,
                     allgeom: bool = True,
                     ):
-        """Extract buildings from Postgres"""
+        """
+        This class generates executes the query using a local postgres
+        database, or a remote one that uses the Underpass schema.
+
+        Args:
+            boundary (FeatureCollection): The boundary polygon
+            custom SQL (str): Don't create the SQL, use the one supplied
+            allgeom (bool): Whether to return centroids or all the full geometry
+                
+        Returns:
+                query (FeatureCollection): the json
+        """
         log.info("Extracting features from Postgres...")
 
         if 'features' in boundary:
@@ -377,40 +458,8 @@ class PostgresClient(DatabaseAccess):
             collection = self.queryRemote(request)
         return collection
 
-# FIXME: it would be nice if this class would work
-class FileClient(object):
-    """Class to handle Overpass queries"""
-
-    def __init__(self,
-                 infile: str,
-                 output: str
-                 ):
-        """Initialize Overpass handler"""
-        OutputFile.__init__(self, output)
-        self.infile = infile
-
-    def getFeatures(self,
-                    boundary,
-                    infile: str,
-                    outfile: str
-                    ):
-        """Extract buildings from a disk file"""
-        log.info("Extracting buildings from %s..." % infile)
-        if boundary:
-            poly = ogr.Open(boundary)
-            layer = poly.GetLayer()
-            ogr.Layer.Clip(osm, layer, memlayer)
-        else:
-            layer = poly.GetLayer()
-
-        tmp = ogr.Open(infile)
-        layer = tmp.GetLayer()
-
-        layer.SetAttributeFilter("tags->>'building' IS NOT NULL")
-
-
 def main():
-    
+    """This main function lets this class be run standalone by a bash script"""    
     parser = argparse.ArgumentParser(
         prog="postgres",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -461,4 +510,5 @@ Optionally a data file can be used.
         # pg.cleanup(outfile)
 
 if __name__ == "__main__":
+    """This is just a hook so this file can be run standlone during development."""
     main()

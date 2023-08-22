@@ -27,12 +27,9 @@ import re
 import yaml
 import json
 from sys import argv
-from geojson import Point, Feature, FeatureCollection, dump, Polygon
+from geojson import Feature, FeatureCollection, dump, Polygon
 import geojson
-import requests
-import time
-import psycopg2
-import subprocess
+# import time
 from pathlib import Path
 from shapely.geometry import shape
 
@@ -139,15 +136,19 @@ class QueryConfig(object):
         # Get the geometry
         self.geometry = shape(data['geometry'])
 
+        # This is only used by Export Tool
         if 'outputType' in data:
             self.outputtype = data['outputType']
 
+        # This is only used by Export Tool
         if 'fileName' in data:
             self.filename = data['fileName']
 
-        # Get the list of tables to query
+        # This is only used by Export Tool
         if 'geometryType' not in data:
             data['geometryType'] = 'all_geometry'
+
+        # Get the list of tables to query
         for table in data['geometryType']:
             if table.lower() == 'all_geometry':
                 self.config['tables'].append('ways_poly')
@@ -178,14 +179,20 @@ class QueryConfig(object):
                     elif k1 == 'join_and':
                         v1['op'] = 'and'
                         self.config['where'].append(v1)
-                # Anything under attributes scans the values that aren't
-                # part of the data, Tags like osm_id, version, uid, user,
-                # and timestamp.
-                if k == 'attributes':
-                    if 'all_geometry' in v:
-                        attrs = v['all_geometry']
+            # Anything under attributes scans the values that aren't
+            # part of the data, Tags like osm_id, version, uid, user,
+            # and timestamp.
+            if k == 'attributes':
+                if 'all_geometry' in v:
+                    for i in v['all_geometry']:
+                        self.config['select'].append({i: []})
+                else:
+                    print(v)
+                    # FIXME: this is a hack
+                    if type(v) == dict:
+                        continue
                     else:
-                        attrs = v
+                        self.config['select'].append({v: []})
 
         for entry in self.config['where']:
             for k, v in entry.items():
@@ -213,7 +220,7 @@ class QueryConfig(object):
             if type(entry) == dict:
                 [[k, v]] = entry.items()
                 if len(v) > 0:
-                    print(f"\tConverting tag \'{k}\' to \'{v}\'")
+                    print(f"\tSelecting tag \'{k}\' is \'{v}\'")
                 else:
                     print(f"\tSelecting tag \'{k}\'")
         print("Where: ")

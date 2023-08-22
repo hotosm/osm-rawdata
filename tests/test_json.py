@@ -43,6 +43,21 @@ def test_filters():
     qc = QueryConfig()
     qc.parseJson(f"{rootdir}/filters.json")
     qc.dump()
+    hits = 0
+    if 'name' in qc.config['select'][0]:
+        hits += 1
+    if 'addr' in qc.config['select'][1]:
+        hits += 1
+    if 'building' in qc.config['select'][2]:
+        hits += 1
+    if 'cafe' in qc.config['select'][3]['amenity']:
+        hits += 1
+    if 'restaurant' in qc.config['select'][3]['amenity']:
+        hits += 1
+    if 'pub' in qc.config['select'][3]['amenity']:
+        hits += 1
+
+    assert hits == 6
     
 def test_formats():
     # this query contains only the geometry and the output file name and type

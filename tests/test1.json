@@ -73,6 +73,7 @@
             }
         }
     },
+    "centroid": true,
     "geometryType": [
       "point",
       "Line",

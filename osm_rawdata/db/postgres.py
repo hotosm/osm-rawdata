@@ -36,15 +36,15 @@ from shapely.geometry import shape, Polygon
 import shapely
 import subprocess
 from pathlib import Path
-from hot_exports.config import QueryConfig
+from osm_rawdata.config import QueryConfig
 from shapely import wkt
 from io import BytesIO
 import zipfile
 
 
 # Find the other files for this project
-import hot_exports as he
-rootdir = he.__path__[0]
+import osm_rawdata as rw
+rootdir = rw.__path__[0]
 
 # Instantiate logger
 log = logging.getLogger(__name__)

@@ -28,8 +28,8 @@ from sys import argv
 from pySmartDL import SmartDL
 
 # Find the other files for this project
-import hot_exports as he
-rootdir = he.__path__[0]
+import osm_rawdata as rw
+rootdir = rw.__path__[0]
 
 # Instantiate logger
 log = logging.getLogger(__name__)

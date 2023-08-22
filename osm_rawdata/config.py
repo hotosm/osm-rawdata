@@ -38,8 +38,8 @@ from shapely.geometry import shape
 
 
 # Find the other files for this project
-import hot_exports as he
-rootdir = he.__path__[0]
+import osm_rawdata as rw
+rootdir = rw.__path__[0]
 
 # Instantiate logger
 log = logging.getLogger(__name__)
@@ -61,6 +61,9 @@ class QueryConfig(object):
                         'keep': list()
                        }
         self.geometry = boundary
+        # These are only in the JSON queries used for Export Tool
+        self.outputtype = None
+        self.filename = None
         # for polygon extracts, sometimes we just want the center point
         self.centroid = False
 
@@ -136,7 +139,15 @@ class QueryConfig(object):
         # Get the geometry
         self.geometry = shape(data['geometry'])
 
+        if 'outputType' in data:
+            self.outputtype = data['outputType']
+
+        if 'fileName' in data:
+            self.filename = data['fileName']
+
         # Get the list of tables to query
+        if 'geometryType' not in data:
+            data['geometryType'] = 'all_geometry'
         for table in data['geometryType']:
             if table.lower() == 'all_geometry':
                 self.config['tables'].append('ways_poly')
@@ -150,6 +161,8 @@ class QueryConfig(object):
             elif table.lower() == 'point':
                 self.config['tables'].append('nodes')
 
+        if 'filters' not in data:
+            data['filters'] = {}
         # The filter define the tags to be used.
         for k, v in data['filters'].items():
             if k == 'tags' and 'all_geometry' in v:
@@ -188,6 +201,13 @@ class QueryConfig(object):
         Dump the contents of the internal data strucute for debugging purposes
         """
         print("Dumping QueryConfig class")
+
+        # These two data items are only used by Export Tool for output files
+        if self.filename:
+            print(f"The output filename is {self.filename}")
+        if self.outputtype:
+            print(f"The output type is {self.outputtype}")
+
         print("Select: ")
         for entry in self.config['select']:
             if type(entry) == dict:
@@ -264,5 +284,5 @@ def main():
     config.dump()
 
 if __name__ == "__main__":
-    """This is just a hook so this file can be run standlone during development."""
+    """This is just a hook so this file can be run standalone during development."""
     main()

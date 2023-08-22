@@ -21,8 +21,6 @@
 import argparse
 import os
 import sys
-from osm_fieldwork.odk_merge import OdkMerge, conflateThread
-from osm_fieldwork.osmfile import OsmFile
 
 # find the path to the test data files
 parser = argparse.ArgumentParser(description="Test parsing JSON")

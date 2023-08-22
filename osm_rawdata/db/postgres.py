@@ -389,7 +389,7 @@ class PostgresClient(DatabaseAccess):
         elif path.suffix == '.yaml':
             result = self.qc.parseYaml(config)
         else:
-            log.error(f"{args.infile} is an unsupported file format!")
+            log.error(f"{path} is an unsupported file format!")
             quit()        
 
     def createDB(self,

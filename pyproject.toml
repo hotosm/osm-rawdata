@@ -32,7 +32,7 @@ classifiers = [
 ]
 
 [project.urls]
-homepage = "https://github.com/hotosm/osm-rawdata/wiki"
+homepage = "https://hotosm.github.io/osm-rawdata"
 documentation = "https://hotosm.github.io/osm-rawdata"
 repository = "https://github.com/hotosm/osm-rawdata"
 

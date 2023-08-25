@@ -2,11 +2,11 @@
 # It is not intended for manual editing.
 
 [metadata]
-groups = ["default", "docs", "debug", "dev", "test"]
+groups = ["default", "docs", "test", "debug", "dev"]
 cross_platform = true
 static_urls = false
 lock_version = "4.3"
-content_hash = "sha256:5a1a27f6fee89724c7ef4babcf583088e96294355b1a8e031cf7c9ce31d569b9"
+content_hash = "sha256:2fed00092dde7c921df54bb989d110d9450b14148e7317147b5e849494edbc2c"
 
 [[package]]
 name = "appnope"

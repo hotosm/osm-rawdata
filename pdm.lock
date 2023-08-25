@@ -6,7 +6,7 @@ groups = ["default", "docs", "debug", "dev", "test"]
 cross_platform = true
 static_urls = false
 lock_version = "4.3"
-content_hash = "sha256:d05df345379dd1a55f944cad87b7e4a1263aad180aa5220149d5be29eb95b83a"
+content_hash = "sha256:5a1a27f6fee89724c7ef4babcf583088e96294355b1a8e031cf7c9ce31d569b9"
 
 [[package]]
 name = "appnope"
@@ -1037,19 +1037,6 @@ summary = "Safely evaluate AST nodes without side effects"
 files = [
     {file = "pure_eval-0.2.2-py3-none-any.whl", hash = "sha256:01eaab343580944bc56080ebe0a674b39ec44a945e6d09ba7db3cb8cec289350"},
     {file = "pure_eval-0.2.2.tar.gz", hash = "sha256:2b45320af6dfaa1750f543d714b6d1c520a1688dec6fd24d339063ce0aaa9ac3"},
-]
-
-[[package]]
-name = "pyaml"
-version = "23.7.0"
-requires_python = ">=3.8"
-summary = "PyYAML-based module to produce a bit more pretty and readable YAML-serialized data"
-dependencies = [
-    "PyYAML",
-]
-files = [
-    {file = "pyaml-23.7.0-py3-none-any.whl", hash = "sha256:0a37018282545ccc31faecbe138fda4d89e236af04d691cfb5af00cd60089345"},
-    {file = "pyaml-23.7.0.tar.gz", hash = "sha256:0c510bbb8938309400e0b1e47ac16fd90e56d652805a93417128786718f33546"},
 ]
 
 [[package]]

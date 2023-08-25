@@ -6,7 +6,7 @@ groups = ["default", "docs", "debug", "dev", "test"]
 cross_platform = true
 static_urls = false
 lock_version = "4.3"
-content_hash = "sha256:d5159424afbea795a1eb9fc9b8ac305d5370e71b5d6e51112193a219d3b3d1ec"
+content_hash = "sha256:d05df345379dd1a55f944cad87b7e4a1263aad180aa5220149d5be29eb95b83a"
 
 [[package]]
 name = "appnope"
@@ -386,6 +386,15 @@ requires_python = ">=3.6.0"
 summary = ""
 files = [
     {file = "GDAL-3.6.4.tar.gz", hash = "sha256:c07d548cbd6544e8a51651fc1e487ca4b39e8fe6b5b3c886082d87f0e49e8313"},
+]
+
+[[package]]
+name = "geojson"
+version = "2.5.0"
+summary = "Python bindings and utilities for GeoJSON"
+files = [
+    {file = "geojson-2.5.0-py2.py3-none-any.whl", hash = "sha256:ccbd13368dd728f4e4f13ffe6aaf725b6e802c692ba0dde628be475040c534ba"},
+    {file = "geojson-2.5.0.tar.gz", hash = "sha256:6e4bb7ace4226a45d9c8c8b1348b3fc43540658359f93c3f7e03efa9f15f658a"},
 ]
 
 [[package]]

@@ -8,7 +8,7 @@ authors = [
 ]
 dependencies = [
     "deepdiff>=6.3.1",
-    "GDAL>=3.6.4",
+    "GDAL==3.6.4",
     "landez>=2.5.0",
     "ogr>=0.0.1",
     "osmium>=3.6.0",

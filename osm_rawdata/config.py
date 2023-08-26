@@ -52,11 +52,12 @@ class QueryConfig(object):
         Args:
                 boundary (Polygon): The project boundary
         """
-        self.config = {'select': list(),
-                        'tables': list(),
-                        'where': list(),
-                        'keep': list()
+        self.config = {'select': dict(),
+                       'tables': list(),
+                       'where': list(),
+                       'keep': list()
                        }
+        self.config['select'] = {'nodes': [], 'ways_poly': [], 'ways_line': []}
         self.geometry = boundary
         # These are only in the JSON queries used for Export Tool
         self.outputtype = None
@@ -179,6 +180,19 @@ class QueryConfig(object):
                     elif k1 == 'join_and':
                         v1['op'] = 'and'
                         self.config['where'].append(v1)
+            elif k == 'tags' and 'point' in v:
+                for k1, v1 in v['point'].items():
+                    for k2, v2 in v1.items():
+                        self.config['select']['nodes'].append({k2: v2})
+                        print(f"POINT: {k2} == {v2}")
+            elif k == 'tags' and 'line' in v:
+                for k1, v1 in v['line'].items():
+                    print(f"LINE: {k} = {v1}")
+                    self.config['select']['ways_line'].append(v1)
+            elif k == 'tags' and 'polygon' in v:
+                for k1, v1 in v['polgon'].items():
+                    print(f"POLY: {k} = {v1}")
+                    self.config['select']['ways_poly'].append(v1)
             # Anything under attributes scans the values that aren't
             # part of the data, Tags like osm_id, version, uid, user,
             # and timestamp.
@@ -187,19 +201,33 @@ class QueryConfig(object):
                     for i in v['all_geometry']:
                         self.config['select'].append({i: []})
                 else:
-                    print(v)
-                    # FIXME: this is a hack
+                    # print(f"FIXME: {k} = {v}")
                     if type(v) == dict:
-                        continue
+                        if 'point' in v:
+                            for v1 in v['point']:
+                                # print(f"POINT2: {v1}")
+                                self.config['select']['nodes'].append(v1)
+                        else:
+                            print(f"OOPS: {v1}")
+
+                        if 'line' in v:
+                            for v1 in v['line']:
+                                # print(f"LINE2: {v1}")
+                                self.config['select']['ways_line'].append(v1)
+                        if 'polygon' in v:
+                            for v1 in v['polygon']:
+                                self.config['select']['ways_poly'].append(v1)
+                                # print(f"POLY2: {v1}")
                     else:
                         self.config['select'].append({v: []})
 
-        for entry in self.config['where']:
-            for k, v in entry.items():
-                if k == 'op':
-                    continue
-                # print(f"bar: {k} = {v}")
-                self.config['select'].append({k: v})
+        # for entry in self.config['where']:
+        #     for k, v in entry.items():
+        #         if k == 'op':
+        #             continue
+        #         print(f"bar: {k} = {v}")
+        #         #for k1, v1 in v
+        #         self.config['select'].append({k: v})
 
         return self.config
 
@@ -216,13 +244,22 @@ class QueryConfig(object):
             print(f"The output type is {self.outputtype}")
 
         print("Select: ")
-        for entry in self.config['select']:
-            if type(entry) == dict:
-                [[k, v]] = entry.items()
-                if len(v) > 0:
-                    print(f"\tSelecting tag \'{k}\' is \'{v}\'")
-                else:
-                    print(f"\tSelecting tag \'{k}\'")
+        import epdb; epdb.st()
+        for key, value in self.config['select'].items():
+            # if len(value) > 0 and type(value) == str:
+            #     print(f"\tSelecting tag \'{value}\' in \'{key}\'")
+            # elif type(value) == dict:
+            #     for k, v in value.items():
+            #         print(f"\tSelecting tag \'{k}\' = \'v\'")
+            if type(value) == list:
+                for v in value:
+                    if type(v) == str:
+                        print(f"\tSelecting tag \'{key}\' has value \'{v}\'")
+                        continue
+                    for k1, v1 in v.items():
+                        print(f"\tSelecting tag \'{key}\' \'{k1}\' has values \'{v1}\'")
+            else:
+                print(f"\tSelecting tag \'{key}\'")
         print("Where: ")
         for entry in self.config['where']:
             if type(entry) == dict:

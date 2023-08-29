@@ -22,42 +22,55 @@ import os
 import sys
 from osm_rawdata.config import QueryConfig
 
+#
+# The JSON data files came from the raw-data-api project, and are currently
+# used by that project for testing.
+#
 
 # Find the other files for this project
 import osm_rawdata as rw
 rootdir = rw.__path__[0]
 if os.path.basename(rootdir) == 'osm_rawdata':
     rootdir = f"./tests/"
-# print(f"\t{rootdir}")
-
 
 def test_levels():
-    # this query contains only the geometry and the output file name and type
+    # this query contains many levels and geometries
     qc = QueryConfig()
-    qc.parseJson(f"{rootdir}/levels.json")
-    qc.dump()
-    assert qc.filename == "Example export with all features" and qc.outputtype == "geojson"
+    data = qc.parseJson(f"{rootdir}/levels.json")
+    # qc.dump()
+    hits = 0
+    if data['select']['nodes'][0]['amenity'][0] == 'bank':
+        hits += 1
+
+    if data['select']['ways_line'][2] == 'waterway':
+        hits += 1
+
+    if data['select']['ways_poly'][2] == 'admin_level':
+        hits += 1
+
+    if qc.filename == "Example export with all features" and qc.outputtype == "geojson":
+        hits += 1
+
+    assert hits == 4
 
 def test_filters():
     # this query contains only the geometry and the output file name and type
     qc = QueryConfig()
-    qc.parseJson(f"{rootdir}/filters.json")
-    qc.dump()
+    pp = qc.parseJson(f"{rootdir}/filters.json")
+    # qc.dump()
     hits = 0
-    if 'name' in qc.config['select'][0]:
+    if 'name' in qc.config['select']['nodes'][2]:
         hits += 1
-    if 'addr' in qc.config['select'][1]:
+    if 'addr' in qc.config['select']['nodes'][3]:
         hits += 1
-    if 'building' in qc.config['select'][2]:
+    if 'building' in 'building' in qc.config['select']['nodes'][0]:
         hits += 1
-    if 'cafe' in qc.config['select'][3]['amenity']:
+    if 'cafe' in qc.config['select']['nodes'][1]['amenity']:
         hits += 1
-    if 'restaurant' in qc.config['select'][3]['amenity']:
-        hits += 1
-    if 'pub' in qc.config['select'][3]['amenity']:
+    if 'restaurant' in qc.config['select']['ways_poly'][1]['amenity']:
         hits += 1
 
-    assert hits == 6
+    assert hits == 5
     
 def test_formats():
     # this query contains only the geometry and the output file name and type
@@ -81,5 +94,6 @@ if __name__ == "__main__":
     test_levels()
     print("--- test_filters ---")
     test_filters()
+    print("--- done() ---")
 
     

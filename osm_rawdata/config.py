@@ -83,37 +83,38 @@ class QueryConfig(object):
         path = Path(filespec)
         data = yaml.load(file, Loader=yaml.Loader)
 
-        if data['select']:
-            for entry in data['select']:
-                if type(entry) == dict:
-                    self.config['select'].append(entry)
-                else:
-                    self.config['select'].append({entry: list()})
+        self.config['tables'] = data['from']
+        for table in self.config['tables']:
+            if data['select']:
+                for entry in data['select']:
+                    if type(entry) == dict:
+                        self.config['select'][table].append(entry)
+                    else:
+                        self.config['select'][table].append({entry: list()})
 
-        for entry in data['keep']:
-            self.config['select'].append({entry: list()})
+                for entry in data['keep']:
+                    self.config['select'][table].append({entry: list()})
 
-        op = None
-        for tag in data['where']['tags']:
-            [[k, v]] = tag.items()
-            if k == 'join_or':
-                op = 'or'
-            elif k == 'join_and':
-                op = 'and'
-            for entry in v:
-                for k1, v1 in entry.items():
-                    if v1 == True:
-                        v1 = 'yes'
-                    newtag = {k1: v1}
+                op = None
+            for tag in data['where']['tags']:
+                [[k, v]] = tag.items()
+                if k == 'join_or':
+                    op = 'or'
+                elif k == 'join_and':
+                    op = 'and'
+                for entry in v:
+                    for k1, v1 in entry.items():
+                        if v1 == True:
+                            v1 = 'yes'
+                        newtag = {k1: v1}
+                        newtag['op'] = op
+                        self.config['where'][table].append(newtag)
+                for k2, v2 in entry.items():
+                    newtag = {k2: dict()}
                     newtag['op'] = op
-                    self.config['where'].append(newtag)
-            for k2, v2 in entry.items():
-                newtag = {k2: dict()}
-                newtag['op'] = op
-                self.config['select'].append({k2: dict()})
+                    self.config['select'][table].append({k2: dict()})
 
         self.config['keep'] = data['keep']
-        self.config['tables'] = data['from']
         
         # The table names are based on the Underpass schema, nodes, ways_poly,
         # ways_line, relations

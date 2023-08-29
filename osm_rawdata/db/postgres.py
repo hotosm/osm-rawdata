@@ -227,7 +227,7 @@ class DatabaseAccess(object):
         This class generates the SQL to query a local postgres database.
 
         Args:
-            config (QueryConfig): The configf data from the query config file
+            config (QueryConfig): The config data from the query config file
             allgeom (bool): Whether to return centroids or all the full geometry
                 
         Returns:
@@ -317,13 +317,24 @@ class DatabaseAccess(object):
             tags["id"] = item[1]
             tags['version'] = item[2]
             i = 3
-            # map the value in the select to the values returns for them.
-            for entry in self.qc.config['select']:
-                [[k, v]] = entry.items()
-                if item[i] is not None:
-                    tags[k] = item[i]
-                i += 1
-
+            # If there are no tables, we're using a custom SQL query
+            if len(self.qc.config['tables']) > 0:
+                # map the value in the select to the values returns for them.
+                for entry in self.qc.config['select']:
+                    [[k, v]] = entry.items()
+                    if item[i] is not None:
+                        tags[k] = item[i]
+                    i += 1
+            else:
+                # Figure out the tags from the custom SELECT
+                end = query.find('FROM')
+                res = query[:end].split(' ')
+                # This should be the geometry
+                geom = wkt.loads(item[0])
+                # This should be the OSM ID
+                tags[res[2][:-1]] = item[1]
+                # This should be the version
+                tags[res[3][:-1]] = item[2]
             features.append(Feature(geometry=geom, properties=tags))
         return features
 
@@ -368,7 +379,7 @@ class PostgresClient(DatabaseAccess):
     """Class to handle SQL queries for the categories"""
     def __init__(self,
                  uri: str,
-                 config: str,
+                 config: str = None,
                  #output: str = None
     ):
         """
@@ -382,16 +393,17 @@ class PostgresClient(DatabaseAccess):
             status (bool): Whether the data base connection was sucessful
         """
         super().__init__(uri)
-        # Load the config file for the SQL query
-        path = Path(config)
         self.qc = QueryConfig()
-        if path.suffix == '.json':
-            result = self.qc.parseJson(config)
-        elif path.suffix == '.yaml':
-            result = self.qc.parseYaml(config)
-        else:
-            log.error(f"{path} is an unsupported file format!")
-            quit()        
+        if config:
+            # Load the config file for the SQL query
+            path = Path(config)
+            if path.suffix == '.json':
+                result = self.qc.parseJson(config)
+            elif path.suffix == '.yaml':
+                result = self.qc.parseYaml(config)
+            else:
+                log.error(f"{path} is an unsupported file format!")
+                quit()
 
     def createDB(self,
                  dburi: uriParser
@@ -444,11 +456,12 @@ class PostgresClient(DatabaseAccess):
             poly = boundary["geometry"]
         wkt = shape(poly)
 
-        config = 'buildings'    # FIXME
+        alldata = list()
         if self.dbshell:
             if not customsql:
                 sql = self.createSQL(self.qc, allgeom)
-            alldata = list()
+            else:
+                sql = [customsql]
             for query in sql:
                 result = self.queryLocal(query, allgeom, wkt)
                 if len(result) > 0:
@@ -477,10 +490,10 @@ Optionally a data file can be used.
     parser.add_argument("-b", "--boundary", required=True, help="Boundary polygon to limit the data size")
     parser.add_argument("-s", "--sql", help="Custom SQL query to execute against the database")
     parser.add_argument("-a", "--all", help="All the geometry or just centroids")
-    parser.add_argument("-c", "--config", required=True, help="The config file for the query (json or yaml)")
+    parser.add_argument("-c", "--config", help="The config file for the query (json or yaml)")
     args = parser.parse_args()
 
-    if len(argv) <= 1:
+    if len(argv) <= 1 or (args.sql is None and args.config is none):
         parser.print_help()
         quit()
 
@@ -499,16 +512,20 @@ Optionally a data file can be used.
     poly = geojson.load(infile)
     if args.uri is not None:
         log.info("Using a Postgres database for the data source")
-        pg = PostgresClient(args.uri, args.config)
         if args.sql:
+            pg = PostgresClient(args.uri)
             sql = open(args.sql, 'r')
             result = pg.execQuery(poly, sql.read())
             log.info("Query returned %d records" % len(result))
         else:
+            pg = PostgresClient(args.uri, args.config)
             result = pg.execQuery(poly)
             log.info("Query returned %d records" % len(result))
 
-        # pg.cleanup(outfile)
+        for item in result['features']:
+            for entry in item:
+                print(entry)
+            # pg.cleanup(outfile)
 
 if __name__ == "__main__":
     """This is just a hook so this file can be run standlone during development."""

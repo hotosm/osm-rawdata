@@ -126,6 +126,7 @@ class DatabaseAccess(object):
         
         Args:
             dburi (str): The URI string for the database connection
+
         Returns:
             status (bool): Whether the data base connection was sucessful    
         """

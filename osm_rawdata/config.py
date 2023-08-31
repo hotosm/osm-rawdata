@@ -256,12 +256,12 @@ class QueryConfig(object):
             if type(value) == list:
                 for v in value:
                     if type(v) == str:
-                        print(f"\tSelecting tag \'{key}\' has value \'{v}\'")
+                        print(f"\tSelecting table \'{key}\' has value \'{v}\'")
                         keys.append(v)
                         continue
                     for k1, v1 in v.items():
                         keys.append(v1)
-                        print(f"\tSelecting tag \'{key}\' \'{k1}\' has values \'{v1}\'")
+                        print(f"\tSelecting table \'{key}\' tag \'{k1}\'")
             else:
                 print(f"\tSelecting tag \'{key}\'")
         #print(f"\tSelecting tag \'{key}\' \'{k1}\' has values \'{keys}\'")
@@ -269,13 +269,15 @@ class QueryConfig(object):
         for key, value in self.config['where'].items():
             if type(value) == list:
                 for v in value:
+                    op = v['op'].upper()
+                    del v['op']
                     if type(v) == str:
-                        print(f"\tWhere tag \'{key}\' has value \'{v}\'")
+                        print(f"\tWhere table \'{key}\' has value \'{v}\'")
                         keys.append(v)
                         continue
                     for k1, v1 in v.items():
                         keys.append(v1)
-                        print(f"\tWhere tag \'{key}\' \'{k1}\' has values \'{v1}\'")
+                        print(f"\tWhere table \'{key}\', tag \'{k1}\' has values \'{v1}\' {op}")
             else:
                 print(f"\tSelecting tag \'{key}\'")
         print("Tables")

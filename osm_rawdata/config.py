@@ -173,8 +173,12 @@ class QueryConfig(object):
                 if 'point' in v:
                     for k1, v1 in v['point'].items():
                         for k2, v2 in v1.items():
+                            tag = dict()
+                            if k1[:4] == 'join':
+                                tag['op'] = k1[5:]
+                                tag[k2] = v2
                             self.config['select']['nodes'].append({k2: v2})
-                            self.config['where']['nodes'].append({k2: v2})
+                            self.config['where']['nodes'].append(tag)
                             # print(f"POINT: {k2} == {v2}")
                 elif 'line' in v:
                     for k1, v1 in v['line'].items():
@@ -269,6 +273,11 @@ class QueryConfig(object):
         for key, value in self.config['where'].items():
             if type(value) == list:
                 for v in value:
+                    if 'op' not in v:
+                        for k, v in v.items():
+                            for v1 in v:
+                                print(f"\tWhere table \'{key}\': {k} has value \'{v1}\'")
+                        continue
                     op = v['op'].upper()
                     del v['op']
                     if type(v) == str:

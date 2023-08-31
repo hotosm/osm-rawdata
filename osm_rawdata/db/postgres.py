@@ -234,39 +234,54 @@ class DatabaseAccess(object):
                 query (FeatureCollection): the json
         """
         sql = list()
-        select = "SELECT "
-        if allgeom:
-            select += "ST_AsText(geom)"
-        else:
-            select += "ST_AsText(ST_Centroid(geom))"
-        select += ", osm_id, version, "
-        for entry in config.config['select']:
-            for k, v in entry.items():
-                    # print(f"{k} = {v}")
-                if len(v) == 0:
-                    select += f"tags->>\'{k}\', "
-                else:
-                    select += f"tags->>\'{k}\' AS {v}, "
-        select = select[:-2]
-
-        where = "WHERE ("
-        previous = ""
-        for entry in config.config['where']:
-            for k, v in entry.items():
-                if previous != f"{entry['op'].upper()}" and len(previous) > 0:
-                    where += ") "
-                    previous = f"{entry['op'].upper()}"
-                if v == 'not null' and k != 'op':
-                    where += f" {previous} tags->>\'{k}' IS NOT NULL"
-                elif k != 'op':
-                    where += f" {previous} tags->>\'{k}\'=\'{v}\'"
-                    # where = f"{where[:-]})"
-                if previous != f"{entry['op'].upper()}":
-                    previous = f"{entry['op'].upper()}"
-                
-        # The database tables to query
+        query = ""
         for table in config.config['tables']:
-            query = f"{select} FROM {table} {where}"
+            select = "SELECT "
+            if allgeom:
+                select += "ST_AsText(geom)"
+            else:
+                select += "ST_AsText(ST_Centroid(geom))"
+            select += ", osm_id, version, "
+            for value in config.config['select'][table]:
+                for k1, v1 in value.items():
+                    select += f"tags->>\'{k1}\', "
+            select = select[:-2]
+
+            where = "WHERE ("
+            previous = ""
+            join_or = list()
+            join_and = list()
+            for entry in config.config['where'][table]:
+                # print(entry)
+                op = entry['op']
+                del entry['op']
+                [[k, v]] = entry.items()
+                if op == 'or':
+                    # print(f"{k} OR {v}")
+                    join_or.append(entry)
+                elif op == 'and':
+                    # print(f"{k} AND {v}")
+                    join_and.append(entry)
+
+            jor = '('
+            for entry in join_or:
+                [[k, v]] = entry.items()
+                jor += f"tags->>\'{k}\'=\'{v}\' OR "
+            jor = f"{jor[:-4]})"
+            # print(f"JOR: {jor}")
+            if len(join_and) > 0:
+                jand = ' AND ('
+            else:
+                jand = '('
+
+            for entry in join_and:
+                [[k, v]] = entry.items()
+                jand += f"tags->>\'{k}\'=\'{v}\' AND "
+            jand = f"{jand[:-4]})"
+            # print(f"JAND: {jand}")
+
+            query = f"{select} FROM {table} WHERE {jor} {jand}"
+            print(query)
             sql.append(query)
         return sql
 
@@ -493,7 +508,7 @@ Optionally a data file can be used.
     parser.add_argument("-c", "--config", help="The config file for the query (json or yaml)")
     args = parser.parse_args()
 
-    if len(argv) <= 1 or (args.sql is None and args.config is none):
+    if len(argv) <= 1 or (args.sql is None and args.config is None):
         parser.print_help()
         quit()
 

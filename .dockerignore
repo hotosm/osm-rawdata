@@ -6,5 +6,6 @@
 !tests
 !pyproject.toml
 !pdm.lock
+!entrypoint.sh
 !README.md
 !LICENSE.md

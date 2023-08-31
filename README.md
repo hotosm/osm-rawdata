@@ -1,5 +1,7 @@
 # osm-rawdata
 
+🕮 [Documentation](https://hotosm.github.io/osm-rawdata/)
+
 These is a module to work with
 [OpenStreetMap](https://www.openstreetmap.org) data using postgres and
 a custom database schema. This code is derived from the [HOT Export
@@ -13,6 +15,35 @@ Since multiple projects need to do data extracts from OpenStreetMap in
 a flexible way, this was designed to have a single body of code to
 maintain. 
 
+## Installation
+
+To install osm-rawdata, you can use pip. Here are two options:
+
+- Directly from the main branch:
+  `pip install git+https://github.com/hotosm/osm-rawdata.git`
+
+- Latest on PyPi:
+  `pip install osm-rawdata`
+
+
+## Using the Container Image
+
+- osm-rawdata scripts can be used via the pre-built container images.
+- These images come with all dependencies bundled, so are simple to run.
+
+Run a specific command:
+
+```bash
+docker run --rm -v $PWD:/data ghcr.io/hotosm/osm-rawdata:0.1.0 osm-rawdata
+```
+
+Run interactively (to use multiple commands):
+
+```bash
+docker run --rm -it -v $PWD:/data ghcr.io/hotosm/osm-rawdata:0.1.0
+```
+
+> Note: the output directory should always be /data/... to persist data.
 
 ## The Database Schema
 

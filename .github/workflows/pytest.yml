@@ -29,7 +29,7 @@ jobs:
         run: >
           docker run -d --name fmtm_pytest
           -v "$GITHUB_WORKSPACE/osm_rawdata:/home/appuser/.local/lib/python3.10/site-packages/osm_rawdata"
-          -v "$GITHUB_WORKSPACE/tests:/home/appuser/tests"
+          -v "$GITHUB_WORKSPACE/tests:/data/tests"
           ghcr.io/hotosm/osm-rawdata:ci
           sleep infinity
 

@@ -7,7 +7,7 @@ where:
     - join_or:
         - { building: yes, amenity: not null }
     - join_and:
-        - { building:material: wood }
+        - { building:material: wood, roof:material: metal }
 keep:
     - building:levels
     - building:material

@@ -34,13 +34,13 @@ To install osm-rawdata, you can use pip. Here are two options:
 Run a specific command:
 
 ```bash
-docker run --rm -v $PWD:/data ghcr.io/hotosm/osm-rawdata:0.1.0 osm-rawdata
+docker run --rm -v $PWD:/data ghcr.io/hotosm/osm-rawdata:latest geofabrik <flags>
 ```
 
 Run interactively (to use multiple commands):
 
 ```bash
-docker run --rm -it -v $PWD:/data ghcr.io/hotosm/osm-rawdata:0.1.0
+docker run --rm -it -v $PWD:/data ghcr.io/hotosm/osm-rawdata:latest
 ```
 
 > Note: the output directory should always be /data/... to persist data.

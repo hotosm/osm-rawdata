@@ -30,6 +30,7 @@ import geojson
 # import time
 from pathlib import Path
 from shapely.geometry import shape
+import flatdict
 
 
 # Find the other files for this project
@@ -53,14 +54,17 @@ class QueryConfig(object):
         self.config = {'select': dict(),
                        'tables': list(),
                        'where': dict(),
-                       'keep': list()
+                       'keep': list(),
                        }
-        self.config['select'] = {'nodes': [], 'ways_poly': [], 'ways_line': []}
-        self.config['where'] = {'nodes': [], 'ways_poly': [], 'ways_line': []}
+        self.config['select'] = {'nodes': [],
+                                 'ways_poly': [],
+                                 'ways_line': [],
+                                 }
+        self.config['where'] = {'nodes': [],
+                                'ways_poly': [],
+                                'ways_line': [],
+                                }
         self.geometry = boundary
-        # These are only in the JSON queries used for Export Tool
-        self.outputtype = None
-        self.filename = None
         # for polygon extracts, sometimes we just want the center point
         self.centroid = False
 
@@ -136,101 +140,50 @@ class QueryConfig(object):
         data = json.load(file)
         # Get the geometry
         self.geometry = shape(data['geometry'])
-
-        # This is only used by Export Tool
-        if 'outputType' in data:
-            self.outputtype = data['outputType']
-
-        # This is only used by Export Tool
-        if 'fileName' in data:
-            self.filename = data['fileName']
-
-        # This is only used by Export Tool
-        if 'geometryType' not in data:
-            data['geometryType'] = 'all_geometry'
-
-        # Get the list of tables to query
-        for table in data['geometryType']:
-            if table.lower() == 'all_geometry':
-                self.config['tables'].append('ways_poly')
-                self.config['tables'].append('ways_line')
-                self.config['tables'].append('nodes')
-                # self.config['tables'].append('relations')
-            elif table.lower() == 'line':
-                self.config['tables'].append('ways_line')
-            elif table.lower() == 'polygon':
-                self.config['tables'].append('ways_poly')
-            elif table.lower() == 'point':
-                self.config['tables'].append('nodes')
-
-        if 'filters' not in data:
-            data['filters'] = {}
-        # The filter define the tags to be used.
-        for k, v in data['filters'].items():
-            if k == 'tags':
-                if 'point' in v:
-                    for k1, v1 in v['point'].items():
-                        for k2, v2 in v1.items():
-                            tag = dict()
-                            self.config['select']['nodes'].append({k2: v2})
-                            if k1[:4] == 'join':
-                                tag['op'] = k1[5:]
-                                tag[k2] = v2
-                            self.config['where']['nodes'].append(tag)
-                            # print(f"POINT: {k2} == {v2}")
-                elif 'line' in v:
-                    for k1, v1 in v['line'].items():
-                        # print(f"LINE: {k} = {v1}")
-                        self.config['where']['ways_line'].append(v1)
-                        self.config['select']['ways_line'].append(v1)
-                elif 'polygon' in v:
-                    for k1, v1 in v['polgon'].items():
-                        # print(f"POLY: {k} = {v1}")
-                        self.config['select']['ways_poly'].append(v1)
-                        self.config['where']['ways_poly'].append(v1)
-                elif 'all_geometry' in v:
-                    # import epdb ; epdb.st()
-                    for k1, v1 in v['all_geometry'].items():
-                        print(f"ALL_GEOMETRY: {k1} == {v1}")
-                        self.config['select']['nodes'].append(v1)
-                        self.config['select']['ways_poly'].append(v1)
-                        self.config['select']['ways_line'].append(v1)
-                        # Where is the same tags, but has a or/and
-                        # if k1[:4] == 'join':
-                        #  v1['op'] = k1[5:]
-                        self.config['where']['nodes'].append(v1)
-                        self.config['where']['ways_poly'].append(v1)
-                        self.config['where']['ways_line'].append(v1)
-            # Anything under attributes scans the values that aren't
-            # part of the data, Tags like osm_id, version, uid, user,
-            # and timestamp.
-            if k == 'attributes':
-                # print(f"FIXME: {k} = {v}")
-                if 'all_geometry' in v:
-                    print(f"ALL_GEOMETRY2 : {k} == {v}")
-                    for k1 in v['all_geometry']:
-                        tag = {k1: []}
-                        self.config['select']['nodes'].append(tag)
-                        self.config['select']['ways_line'].append(tag)
-                        self.config['select']['ways_poly'].append(tag)
-                else:
-                    if type(v) == dict:
-                        if 'point' in v:
-                            for v1 in v['point']:
-                                # print(f"POINT2: {v1}")
-                                self.config['select']['nodes'].append({v1: []})
-                        # else:
-                            # print(f"OOPS: {v1}")
-                        if 'line' in v:
-                            for v1 in v['line']:
-                                # print(f"LINE2: {v1}")
-                                self.config['select']['ways_line'].append({v1: []})
-                        if 'polygon' in v:
-                            for v1 in v['polygon']:
-                                self.config['select']['ways_poly'].append({v1: []})
-                                # print(f"POLY2: {v1}")
+        for key, value in flatdict.FlatDict(data).items():
+            keys = key.split(':')
+            # print(keys)
+            # print(f"\t{value}")
+            # We already have the geometry
+            if key[:8] == 'geometry':
+                continue
+            if len(keys) == 1:
+                self.config.update({key: value})
+                continue
+            # keys[0] is currently always 'filters'
+            # keys[1] is currently 'tags' for the WHERE clause,
+            # of attributes for the SELECT
+            geom = keys[2]
+            # tag = keys[4]
+            # Get the geometry
+            if geom == 'point':
+                geom = 'nodes'
+            elif geom == 'line':
+                geom = 'ways_line'
+            elif geom == 'polygon':
+                geom = 'ways_poly'
+            if keys[1] == 'attributes':
+                for v1 in value:
+                    if geom == 'all_geometry':
+                        self.config['select']['nodes'].append({v1: {}})
+                        self.config['select']['ways_line'].append({v1: {}})
+                        self.config['select']['ways_poly'].append({v1: {}})
+                        self.config['tables'].append('nodes')
+                        self.config['tables'].append('ways_poly')
+                        self.config['tables'].append('ways_line')
                     else:
-                        self.config['select'].append({v: []})
+                        self.config['tables'].append(geom)
+                        self.config['select'][geom].append({v1: {}})
+            if keys[1] == 'tags':
+                newtag = {keys[4]: value}
+                newtag['op'] = keys[3][5:]
+                if geom == 'all_geometry':
+                    self.config['where']['nodes'].append(newtag)
+                    self.config['where']['ways_poly'].append(newtag)
+                    self.config['where']['ways_line'].append(newtag)
+                else:
+                    self.config['where'][geom].append(newtag)
+
         return self.config
 
     def dump(self):
@@ -240,10 +193,10 @@ class QueryConfig(object):
         print("Dumping QueryConfig class")
 
         # These two data items are only used by Export Tool for output files
-        if self.filename:
-            print(f"The output filename is {self.filename}")
-        if self.outputtype:
-            print(f"The output type is {self.outputtype}")
+        # for k, v in self.config.items():
+        #     if k == 'nodes' or k == 'ways_poly' or k == 'ways_line' or k == 'keep' or k == 'tables' k ==:
+        #         continue
+        #     print(f"Other {k} is \'{v}\'")
 
         keys = list()
         for key, value in self.config['select'].items():
@@ -263,25 +216,22 @@ class QueryConfig(object):
         for key, value in self.config['where'].items():
             if type(value) == list:
                 for v in value:
-                    if 'op' not in v:
-                        for k, v in v.items():
-                            for v1 in v:
-                                print(f"\tWhere table \'{key}\': {k} has value \'{v1}\'")
-                        continue
                     op = v['op'].upper()
-                    del v['op']
+                    # del v['op']
                     if type(v) == str:
                         print(f"\tWhere table \'{key}\' has value \'{v}\'")
                         keys.append(v)
                         continue
                     for k1, v1 in v.items():
                         keys.append(v1)
+                        if k1 == 'op':
+                            continue
                         print(f"\tWhere table \'{key}\', tag \'{k1}\' has values \'{v1}\' {op}")
             else:
                 print(f"\tSelecting tag \'{key}\'")
-        print("Tables")
-        for table in self.config['tables']:
-            print(f"\t{table}")
+        #print("Tables")
+        #for table in self.config['tables']:
+        #    print(f"\t{table}")
         if self.geometry:
             print(self.geometry)
     

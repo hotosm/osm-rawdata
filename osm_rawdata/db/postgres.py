@@ -22,16 +22,15 @@
 import argparse
 import logging
 import sys
+import os
 import json
 from sys import argv
-from geojson import Point, Feature, FeatureCollection, dump, Polygon
+from geojson import Feature, FeatureCollection, dump, Polygon
 import geojson
 import requests
 import time
 import psycopg2
 from shapely.geometry import shape, Polygon
-import shapely
-import subprocess
 from pathlib import Path
 from osm_rawdata.config import QueryConfig
 from shapely import wkt
@@ -251,44 +250,51 @@ class DatabaseAccess(object):
             join_and = list()
             for entry in config.config['where'][table]:
                 # print(entry)
+                if 'op' not in entry:
+                    pass
                 op = entry['op']
-                del entry['op']
-                [[k, v]] = entry.items()
-                if op == 'or':
-                    print(f"1: {k} OR {v}")
-                    join_or.append(entry)
-                elif op == 'and':
-                    print(f"2: {k} AND {v}")
-                    join_and.append(entry)
-
+                for k, v in entry.items():
+                    if k == 'op':
+                        continue
+                    if op == 'or':
+                        # print(f"1: {k}=\'{v}\' OR ")
+                        join_or.append(entry)
+                    elif op == 'and':
+                        # print(f"2: {k}=\'{v}\' AND ")
+                        join_and.append(entry)
             # jor = '('
             jor = ''
-            # FIXME: v is now a list
             for entry in join_or:
-                [[k, v]] = entry.items()
-                for v1 in v:
-                    jor += f"tags->>\'{k}\'=\'{v1}\' OR "
-            # jor = f"{jor[:-4]})"
-            jor = f"{jor[:-4]}"
-            print(f"JOR: {jor}")
-            if len(join_and) > 0:
-                # jand = ' AND ('
-                jand = ' AND '
-            # else:
-            #     jand = '('
+                for k, v in entry.items():
+                    if k == 'op':
+                        continue
+                    if len(v) == 1:
+                        v1 = f"=\'{v[0]}\'"
+                    elif len(v) > 0:
+                        v1 = f" IN {str(tuple(v))}"
+                    else:
+                        v1 =  'IS NOT NULL'
+                    jor += f"tags->>\'{k}\' {v1} OR "
+            #print(f"JOR: {jor}")
 
             jand = ''
             for entry in join_and:
-                [[k, v]] = entry.items()
-                for v1 in v:
-                    jand += f"tags->>\'{k}\'=\'{v1}\' AND "
-            # jand = f"{jand[:-4]})"
-            jand = f"{jand[:-4]}"
-            print(f"JAND: {jand}")
+                for k, v in entry.items():
+                    if k == 'op':
+                        continue
+                    if len(v) == 1:
+                        v1 = f"=\'{v[0]}\'"
+                    elif len(v) > 0:
+                        v1 = f" IN {str(tuple(v))}"
+                    else:
+                        v1 = 'IS NOT NULL AND'
+                    jand += f"tags->>\'{k}\' {v1} AND "
+            #print(f"JAND: {jand}")
+            query = f"{select} FROM {table} WHERE {jor} {jand}".rstrip()
+            #if query[len(query)-5:] == ' OR  ':
+            # print(query[:query.rfind(' ')])
+            sql.append(query[:query.rfind(' ')])
 
-            query = f"{select} FROM {table} WHERE {jor} {jand}"
-            print(query)
-            sql.append(query)
         return sql
 
     def queryLocal(self,
@@ -326,7 +332,7 @@ class DatabaseAccess(object):
         elif query.find(" relations ") > 0:
             query = query.replace("relations", "relations_view")
         features = list()
-        log.debug(query)
+        # log.debug(query)
         self.dbcursor.execute(query)
         result = self.dbcursor.fetchall()
         log.info("Query returned %d records" % len(result))
@@ -349,7 +355,6 @@ class DatabaseAccess(object):
                         if item[i] is not None:
                             tags[k] = item[i]
                         i += 1
-                        print(f"TAGS: {tags}")
             else:
                 # Figure out the tags from the custom SELECT
                 end = query.find('FROM')

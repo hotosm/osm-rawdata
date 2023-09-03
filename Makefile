@@ -55,6 +55,12 @@ uml:
 apidoc: force
 	cd docs && doxygen
 
+lint:
+	@vulture osm_rawdata
+# pylint
+# pyflakes
+# coverage
+
 # Strip any unicode out of the markdown file before converting to PDF
 pdf: $(PDFS)
 %.pdf: %.md

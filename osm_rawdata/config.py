@@ -20,10 +20,8 @@
 # <info@hotosm.org>
 
 import argparse
-import os
 import logging
 import sys
-import re
 import yaml
 import json
 from sys import argv
@@ -98,15 +96,15 @@ class QueryConfig(object):
                 op = None
             for tag in data['where']['tags']:
                 [[k, v]] = tag.items()
-                if k == 'join_or':
-                    op = 'or'
-                elif k == 'join_and':
-                    op = 'and'
+                if k[:4] == 'join':
+                    op = k[5:]
+                if tag == 'op':
+                    continue
                 for entry in v:
                     for k1, v1 in entry.items():
                         if v1 == True:
                             v1 = 'yes'
-                        newtag = {k1: v1}
+                        newtag = {k1: [v1]}
                         newtag['op'] = op
                         self.config['where'][table].append(newtag)
                 for k2, v2 in entry.items():
@@ -174,10 +172,10 @@ class QueryConfig(object):
                     for k1, v1 in v['point'].items():
                         for k2, v2 in v1.items():
                             tag = dict()
+                            self.config['select']['nodes'].append({k2: v2})
                             if k1[:4] == 'join':
                                 tag['op'] = k1[5:]
                                 tag[k2] = v2
-                            self.config['select']['nodes'].append({k2: v2})
                             self.config['where']['nodes'].append(tag)
                             # print(f"POINT: {k2} == {v2}")
                 elif 'line' in v:
@@ -193,13 +191,13 @@ class QueryConfig(object):
                 elif 'all_geometry' in v:
                     # import epdb ; epdb.st()
                     for k1, v1 in v['all_geometry'].items():
-                        # print(f"ALL_GEOMETRY: {k1} == {v1}")
-                        if k1[:4] == 'join':
-                            v1['op'] = k1[5:]
+                        print(f"ALL_GEOMETRY: {k1} == {v1}")
                         self.config['select']['nodes'].append(v1)
                         self.config['select']['ways_poly'].append(v1)
                         self.config['select']['ways_line'].append(v1)
                         # Where is the same tags, but has a or/and
+                        # if k1[:4] == 'join':
+                        #  v1['op'] = k1[5:]
                         self.config['where']['nodes'].append(v1)
                         self.config['where']['ways_poly'].append(v1)
                         self.config['where']['ways_line'].append(v1)
@@ -209,38 +207,30 @@ class QueryConfig(object):
             if k == 'attributes':
                 # print(f"FIXME: {k} = {v}")
                 if 'all_geometry' in v:
-                    for i in v['all_geometry']:
-                        self.config['select']['nodes'].append({i: []})
-                        self.config['select']['ways_line'].append({i: []})
-                        self.config['select']['ways_poly'].append({i: []})
+                    print(f"ALL_GEOMETRY2 : {k} == {v}")
+                    for k1 in v['all_geometry']:
+                        tag = {k1: []}
+                        self.config['select']['nodes'].append(tag)
+                        self.config['select']['ways_line'].append(tag)
+                        self.config['select']['ways_poly'].append(tag)
                 else:
                     if type(v) == dict:
                         if 'point' in v:
                             for v1 in v['point']:
                                 # print(f"POINT2: {v1}")
-                                self.config['select']['nodes'].append(v1)
+                                self.config['select']['nodes'].append({v1: []})
                         # else:
                             # print(f"OOPS: {v1}")
-
                         if 'line' in v:
                             for v1 in v['line']:
                                 # print(f"LINE2: {v1}")
-                                self.config['select']['ways_line'].append(v1)
+                                self.config['select']['ways_line'].append({v1: []})
                         if 'polygon' in v:
                             for v1 in v['polygon']:
-                                self.config['select']['ways_poly'].append(v1)
+                                self.config['select']['ways_poly'].append({v1: []})
                                 # print(f"POLY2: {v1}")
                     else:
                         self.config['select'].append({v: []})
-
-        # for entry in self.config['where']:
-        #     for k, v in entry.items():
-        #         if k == 'op':
-        #             continue
-        #         print(f"bar: {k} = {v}")
-        #         #for k1, v1 in v
-        #         self.config['select'].append({k: v})
-
         return self.config
 
     def dump(self):

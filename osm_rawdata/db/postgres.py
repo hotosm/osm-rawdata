@@ -20,11 +20,8 @@
 # <info@hotosm.org>
 
 import argparse
-import os
 import logging
 import sys
-import re
-import yaml
 import json
 from sys import argv
 from geojson import Point, Feature, FeatureCollection, dump, Polygon
@@ -242,12 +239,13 @@ class DatabaseAccess(object):
             else:
                 select += "ST_AsText(ST_Centroid(geom))"
             select += ", osm_id, version, "
-            for value in config.config['select'][table]:
-                for k1, v1 in value.items():
+            for entry in config.config['select'][table]:
+                if type(entry) == str:
+                    import epdb; epdb.st()
+                for k1, v1 in entry.items():
                     select += f"tags->>\'{k1}\', "
             select = select[:-2]
 
-            where = "WHERE ("
             previous = ""
             join_or = list()
             join_and = list()
@@ -257,28 +255,36 @@ class DatabaseAccess(object):
                 del entry['op']
                 [[k, v]] = entry.items()
                 if op == 'or':
-                    # print(f"{k} OR {v}")
+                    print(f"1: {k} OR {v}")
                     join_or.append(entry)
                 elif op == 'and':
-                    # print(f"{k} AND {v}")
+                    print(f"2: {k} AND {v}")
                     join_and.append(entry)
 
-            jor = '('
+            # jor = '('
+            jor = ''
+            # FIXME: v is now a list
             for entry in join_or:
                 [[k, v]] = entry.items()
-                jor += f"tags->>\'{k}\'=\'{v}\' OR "
-            jor = f"{jor[:-4]})"
-            # print(f"JOR: {jor}")
+                for v1 in v:
+                    jor += f"tags->>\'{k}\'=\'{v1}\' OR "
+            # jor = f"{jor[:-4]})"
+            jor = f"{jor[:-4]}"
+            print(f"JOR: {jor}")
             if len(join_and) > 0:
-                jand = ' AND ('
-            else:
-                jand = '('
+                # jand = ' AND ('
+                jand = ' AND '
+            # else:
+            #     jand = '('
 
+            jand = ''
             for entry in join_and:
                 [[k, v]] = entry.items()
-                jand += f"tags->>\'{k}\'=\'{v}\' AND "
-            jand = f"{jand[:-4]})"
-            # print(f"JAND: {jand}")
+                for v1 in v:
+                    jand += f"tags->>\'{k}\'=\'{v1}\' AND "
+            # jand = f"{jand[:-4]})"
+            jand = f"{jand[:-4]}"
+            print(f"JAND: {jand}")
 
             query = f"{select} FROM {table} WHERE {jor} {jand}"
             print(query)
@@ -335,11 +341,15 @@ class DatabaseAccess(object):
             # If there are no tables, we're using a custom SQL query
             if len(self.qc.config['tables']) > 0:
                 # map the value in the select to the values returns for them.
-                for entry in self.qc.config['select']:
-                    [[k, v]] = entry.items()
-                    if item[i] is not None:
-                        tags[k] = item[i]
-                    i += 1
+                for table, values in self.qc.config['select'].items():
+                    for entry in values:
+                        if i== len(item):
+                            break
+                        [[k, v]] = entry.items()
+                        if item[i] is not None:
+                            tags[k] = item[i]
+                        i += 1
+                        print(f"TAGS: {tags}")
             else:
                 # Figure out the tags from the custom SELECT
                 end = query.find('FROM')
@@ -439,7 +449,7 @@ class PostgresClient(DatabaseAccess):
         #result = subprocess.call("createdb", uri.dbname)
 
         # Add the extensions needed
-        sql = f"CREATE EXTENSION postgis; CREATE EXTENSION hstore;"
+        sql = "CREATE EXTENSION postgis; CREATE EXTENSION hstore;"
         self.dbcursor.execute(sql)
         result = self.dbcursor.fetchall()
         log.info("Query returned %d records" % len(result))

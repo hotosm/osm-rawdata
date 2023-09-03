@@ -52,7 +52,6 @@ version = "0.1.0"
 version_files = [
     "pyproject.toml:version",
     "osm_rawdata/__version__.py",
-    "build_imgs.sh:PKG_VERSION",
 ]
 
 [tool.pdm]

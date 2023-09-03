@@ -39,16 +39,16 @@ def test_levels():
     data = qc.parseJson(f"{rootdir}/levels.json")
     # qc.dump()
     hits = 0
-    if data['select']['nodes'][0]['amenity'][0] == 'bank':
+    if data['where']['nodes'][0]['amenity'][0] == 'bank':
         hits += 1
 
-    if data['select']['ways_line'][2] == 'waterway':
+    if 'waterway' in data['where']['ways_line'][3]:
         hits += 1
 
-    if data['select']['ways_poly'][2] == 'admin_level':
+    if 'admin_level' in data['select']['ways_poly'][2]:
         hits += 1
 
-    if qc.filename == "Example export with all features" and qc.outputtype == "geojson":
+    if qc.config['fileName'] == "Example export with all features" and qc.config['outputType'] == "geojson":
         hits += 1
 
     assert hits == 4
@@ -59,15 +59,15 @@ def test_filters():
     pp = qc.parseJson(f"{rootdir}/filters.json")
     # qc.dump()
     hits = 0
-    if 'name' in qc.config['select']['nodes'][2]:
+    if 'name' in qc.config['select']['nodes'][0]:
         hits += 1
-    if 'addr' in qc.config['select']['nodes'][3]:
+    if 'addr' in qc.config['select']['nodes'][1]:
         hits += 1
-    if 'building' in 'building' in qc.config['select']['nodes'][0]:
+    if 'building' in 'building' in qc.config['where']['nodes'][0]:
         hits += 1
-    if 'cafe' in qc.config['select']['nodes'][1]['amenity']:
+    if 'cafe' in qc.config['where']['nodes'][1]['amenity']:
         hits += 1
-    if 'restaurant' in qc.config['select']['ways_poly'][1]['amenity']:
+    if 'restaurant' in qc.config['where']['ways_poly'][1]['amenity']:
         hits += 1
 
     assert hits == 5
@@ -76,7 +76,7 @@ def test_formats():
     # this query contains only the geometry and the output file name and type
     qc = QueryConfig()
     qc.parseJson(f"{rootdir}/formats.json")
-    assert qc.outputtype == "shp" and qc.filename == "Pokhara_all_features"
+    assert qc.config['outputType'] == "shp" and qc.config['fileName'] == "Pokhara_all_features"
 
 def test_everything():
     # this query contains only the geometry, we want everything within this polygon

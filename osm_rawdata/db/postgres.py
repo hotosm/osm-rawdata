@@ -163,7 +163,7 @@ class DatabaseAccess(object):
     def createJson(self,
                    config: QueryConfig,
                    boundary: Polygon,
-                   allgeom: bool = False
+                   allgeom: bool = False,
                    ):
         """
         This class generates a JSON file, which is used for remote access
@@ -175,7 +175,7 @@ class DatabaseAccess(object):
             allgeom (bool): Whether to return centroids or all the full geometry
                 
         Returns:
-                query (FeatureCollection): the json
+            (FeatureCollection): the json data
         """
         feature = dict()
         feature["geometry"] = boundary
@@ -183,36 +183,49 @@ class DatabaseAccess(object):
         filters = dict()
         filters["tags"] = dict()
         filters["tags"]["all_geometry"] = dict()
-        geometryType = list()
-        for table in config.config['tables']:
-            if table == 'nodes':
-                geometryType.append('point')
-            if table == 'way_line':
-                geometryType.append('line')
-            if table == 'way_poly':
-                geometryType.append('polygon')
-        # feature.update({"geometryType": geometryType})
+
+        # This only effects the output file
+        geometrytype = list()
+        #for table in config.config['tables']:
+        if len(config.config['select']['nodes']) > 0 or len(config.config['where']['nodes']) > 0:
+            geometrytype.append('point')
+        if len(config.config['select']['ways_line']) > 0 or len(config.config['where']['ways_line']) > 0:
+            geometrytype.append('line')
+        if len(config.config['select']['ways_poly']) > 0 or len(config.config['where']['ways_poly']) > 0:
+            geometrytype.append('polygon')
+        feature['geometryType'] = geometrytype
 
         # The database tables to query
         # if tags exists, then only query those fields
         select = ""
-        for entry in config.config['where']:
-            for k, v in entry.items():
+        for key, value in config.config['where'].items():
+            for item in value:
                 valitem = list()
-                if v == 'not null':
-                    valitem = [v]
-                select += f"\"{k}\": [],"
-                if k == 'op':
-                    continue
-                if entry['op'] == 'or':
-                    if 'join_or' not in filters["tags"]["all_geometry"]:
-                        filters["tags"]["all_geometry"]["join_or"] = dict()
-                    filters["tags"]["all_geometry"]["join_or"].update({k: valitem})
-                elif entry['op'] == 'and':
-                    if 'join_and' not in filters["tags"]["all_geometry"]:
-                        filters["tags"]["all_geometry"]["join_and"] = dict()
-                    filters["tags"]["all_geometry"]["join_and"].update({k: valitem})
+                # if v == 'not null':
+                #     valitem = [v]
+                # select += f"\"{k}\": [],"
+                # if k == 'op':
+                #     continue
+                # if entry['op'] == 'or':
+                #     if 'join_or' not in filters["tags"]["all_geometry"]:
+                #         filters["tags"]["all_geometry"]["join_or"] = dict()
+                #     filters["tags"]["all_geometry"]["join_or"].update({k: valitem})
+                # elif entry['op'] == 'and':
+                #     if 'join_and' not in filters["tags"]["all_geometry"]:
+                #         filters["tags"]["all_geometry"]["join_and"] = dict()
+                #     filters["tags"]["all_geometry"]["join_and"].update({k: valitem})
         feature.update({"filters": filters})
+
+        attributes = list()
+        for table, data in config.config['select'].items():
+            for value in data:
+                [[k, v]] = value.items()
+                if k not in attributes:
+                    attributes.append(k)
+
+        # Whether to dump centroids or polygons
+        if 'centroid' in config.config:
+            feature['centroid'] = true
         return json.dumps(feature)
 
     def createSQL(self,
@@ -369,7 +382,7 @@ class DatabaseAccess(object):
         return features
 
     def queryRemote(self,
-                    query: str = None
+                    query: str = None,
                     ):
         """
         This queries a remote postgres database using the FastAPI
@@ -378,7 +391,7 @@ class DatabaseAccess(object):
         Args:
             query (str): The SQL query to execute
         Returns:
-            data (FeatureCollection): the results of the query
+            (FeatureCollection): the results of the query
         """
         url = f"{self.url}/snapshot/"
         result = self.session.post(url, data=query, headers=self.headers)
@@ -499,6 +512,7 @@ class PostgresClient(DatabaseAccess):
             collection = FeatureCollection(alldata)
         else:
             request = self.createJson(self.qc, poly, allgeom)
+            # print(f"FIXME: {request}")
             collection = self.queryRemote(request)
         return collection
 
@@ -552,9 +566,12 @@ Optionally a data file can be used.
             result = pg.execQuery(poly)
             log.info("Query returned %d records" % len(result))
 
-        for item in result['features']:
-            for entry in item:
-                print(entry)
+        for entry in result['features']:
+            for key, value in entry.items():
+                # print(key)
+                if key == 'Feature' or key == 'type' or key == 'geometry':
+                    continue
+                print(f"Got: {value}")
             # pg.cleanup(outfile)
 
 if __name__ == "__main__":

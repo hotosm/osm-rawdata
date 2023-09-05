@@ -182,7 +182,7 @@ class DatabaseAccess(object):
 
         filters = dict()
         filters["tags"] = dict()
-        filters["tags"]["all_geometry"] = dict()
+        # filters["tags"]["all_geometry"] = dict()
 
         # This only effects the output file
         geometrytype = list()
@@ -195,25 +195,31 @@ class DatabaseAccess(object):
             geometrytype.append('polygon')
         feature['geometryType'] = geometrytype
 
+        tables = {'nodes': 'point',
+                  'ways_poly': 'polygon',
+                  'ways_line': 'line'
+                  }
         # The database tables to query
         # if tags exists, then only query those fields
-        select = ""
-        for key, value in config.config['where'].items():
-            for item in value:
-                valitem = list()
-                # if v == 'not null':
-                #     valitem = [v]
-                # select += f"\"{k}\": [],"
-                # if k == 'op':
-                #     continue
-                # if entry['op'] == 'or':
-                #     if 'join_or' not in filters["tags"]["all_geometry"]:
-                #         filters["tags"]["all_geometry"]["join_or"] = dict()
-                #     filters["tags"]["all_geometry"]["join_or"].update({k: valitem})
-                # elif entry['op'] == 'and':
-                #     if 'join_and' not in filters["tags"]["all_geometry"]:
-                #         filters["tags"]["all_geometry"]["join_and"] = dict()
-                #     filters["tags"]["all_geometry"]["join_and"].update({k: valitem})
+        join_or = {'point': [],
+                   'polygon': [],
+                   'line': [],
+                   }
+        join_and = {'point': [],
+                   'polygon': [],
+                   'line': [],
+                   }
+        for table in config.config['where'].keys():
+            for item in config.config['where'][table]:
+                key = list(item.keys())[0]
+                if item['op'] == 'or':
+                    join_or[tables[table]].append(key)
+                if item['op'] == 'and':
+                    join_and[tables[table]].append(key)
+        filters['tags'] = {'point': {}, 'polygon': {}, 'line': {}}
+        for table in join_or.keys():
+            filters['tags'][table]['join_or'] = join_or[table]
+            filters['tags'][table]['join_and'] = join_and[table]
         feature.update({"filters": filters})
 
         attributes = list()
@@ -440,6 +446,7 @@ class PostgresClient(DatabaseAccess):
         if config:
             # Load the config file for the SQL query
             path = Path(config)
+            result = None
             if path.suffix == '.json':
                 result = self.qc.parseJson(config)
             elif path.suffix == '.yaml':

@@ -209,6 +209,9 @@ class DatabaseAccess(object):
                    'polygon': [],
                    'line': [],
                    }
+        filters['tags'] = {'point': {'join_or': {}, 'join_and': {}},
+                           'polygon': {'join_or': {}, 'join_and': {}},
+                           'line': {'join_or': {}, 'join_and': {}}}
         for table in config.config['where'].keys():
             for item in config.config['where'][table]:
                 key = list(item.keys())[0]
@@ -216,10 +219,8 @@ class DatabaseAccess(object):
                     join_or[tables[table]].append(key)
                 if item['op'] == 'and':
                     join_and[tables[table]].append(key)
-        filters['tags'] = {'point': {}, 'polygon': {}, 'line': {}}
-        for table in join_or.keys():
-            filters['tags'][table]['join_or'] = join_or[table]
-            filters['tags'][table]['join_and'] = join_and[table]
+                filters['tags'][tables[table]]['join_or'][key] = item[key]
+                filters['tags'][tables[table]]['join_and'][key] = item[key]
         feature.update({"filters": filters})
 
         attributes = list()

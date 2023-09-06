@@ -122,9 +122,6 @@ class DatabaseAccess(object):
         
         Args:
             dburi (str): The URI string for the database connection
-
-        Returns:
-            (bool): Whether the data base connection was sucessful    
         """
         self.dbshell = None
         self.dbcursor = None

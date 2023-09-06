@@ -124,7 +124,7 @@ class DatabaseAccess(object):
             dburi (str): The URI string for the database connection
 
         Returns:
-            status (bool): Whether the data base connection was sucessful    
+            (bool): Whether the data base connection was sucessful    
         """
         self.dbshell = None
         self.dbcursor = None
@@ -155,10 +155,8 @@ class DatabaseAccess(object):
                 self.dbcursor = self.dbshell.cursor()
                 if self.dbcursor.closed == 0:
                     log.info(f"Opened cursor in {uri['dbname']}")
-                    return True
             except Exception as e:
                 log.error(f"Couldn't connect to database: {e}")
-        return False
 
     def createJson(self,
                    config: QueryConfig,

@@ -218,8 +218,12 @@ class DatabaseAccess(object):
                     join_or[tables[table]].append(key)
                 if item['op'] == 'and':
                     join_and[tables[table]].append(key)
-                filters['tags'][tables[table]]['join_or'][key] = item[key]
-                filters['tags'][tables[table]]['join_and'][key] = item[key]
+                if item[key][0] == 'not null':
+                    filters['tags'][tables[table]]['join_or'][key] = []
+                    filters['tags'][tables[table]]['join_and'][key] = []
+                else:
+                    filters['tags'][tables[table]]['join_or'][key] = item[key]
+                    filters['tags'][tables[table]]['join_and'][key] = item[key]
         feature.update({"filters": filters})
 
         attributes = list()
@@ -288,7 +292,10 @@ class DatabaseAccess(object):
                     if k == 'op':
                         continue
                     if len(v) == 1:
-                        v1 = f"=\'{v[0]}\'"
+                        if v[0] == 'not null':
+                            v1 = f"IS NOT NULL"
+                        else:
+                            v1 = f"=\'{v[0]}\'"
                     elif len(v) > 0:
                         v1 = f" IN {str(tuple(v))}"
                     else:
@@ -302,7 +309,10 @@ class DatabaseAccess(object):
                     if k == 'op':
                         continue
                     if len(v) == 1:
-                        v1 = f"=\'{v[0]}\'"
+                        if v[0] == 'not null':
+                            v1 = f"IS NOT NULL"
+                        else:
+                            v1 = f"=\'{v[0]}\'"
                     elif len(v) > 0:
                         v1 = f" IN {str(tuple(v))}"
                     else:
@@ -385,7 +395,8 @@ class DatabaseAccess(object):
                 # This should be the version
                 tags[res[3][:-1]] = item[2]
             features.append(Feature(geometry=geom, properties=tags))
-        return FeatureCollection(features)
+        # return FeatureCollection(features)
+        return features
 
 
     def queryRemote(self,
@@ -396,7 +407,8 @@ class DatabaseAccess(object):
         backend to the HOT Export Tool.
 
         Args:
-            query (str): The SQL query to execute
+            query (str): The JSON query to execute
+
         Returns:
             (FeatureCollection): the results of the query
         """
@@ -501,7 +513,7 @@ class PostgresClient(DatabaseAccess):
         log.info("Extracting features from Postgres...")
 
         if 'features' in boundary:
-            # FIXME: ideally this shyould support multipolygons
+            # FIXME: ideally this should support multipolygons
             poly = boundary['features'][0]['geometry']
         else:
             poly = boundary["geometry"]
@@ -514,13 +526,13 @@ class PostgresClient(DatabaseAccess):
             else:
                 sql = [customsql]
             for query in sql:
+                print(query)
                 result = self.queryLocal(query, allgeom, wkt)
                 if len(result) > 0:
                     alldata.append(result)
             collection = FeatureCollection(alldata)
         else:
             request = self.createJson(self.qc, poly, allgeom)
-            # print(f"FIXME: {request}")
             collection = self.queryRemote(request)
         return collection
 

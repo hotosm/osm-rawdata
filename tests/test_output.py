@@ -39,7 +39,7 @@ def test_yaml():
     qc = QueryConfig()
     result = qc.parseYaml(f"{rootdir}/buildings.yaml")
     sql = db.createSQL(qc, True)
-    out = "SELECT ST_AsText(geom), osm_id, version, tags->>'building', tags->>'amenity', tags->>'building:material', tags->>'roof:material' FROM nodes WHERE tags->>'building' ='yes' OR tags->>'amenity' ='not null' OR  tags->>'building:material' ='wood' AND tags->>'roof:material' ='metal'"
+    out = "SELECT ST_AsText(geom), osm_id, version, tags->>'building', tags->>'amenity', tags->>'building:material', tags->>'roof:material' FROM nodes WHERE tags->>'building' ='yes' OR tags->>'amenity' IS NOT NULL OR  tags->>'building:material' ='wood' AND tags->>'roof:material' ='metal'"
     if sql[0] == out:
         hits += 1
 

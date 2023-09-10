@@ -125,33 +125,37 @@ class DatabaseAccess(object):
         """
         self.dbshell = None
         self.dbcursor = None
-        uri = uriParser(dburi)
-        if uri['dbname'] == "underpass":
+        self.uri = uriParser(dburi)
+        if self.uri['dbname'] == "underpass":
             # Authentication data
             # self.auth = HTTPBasicAuth(self.user, self.passwd)
 
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            self.url = "https://raw-data-api0.hotosm.org/v1"
+            db = os.getenv('UNDERPASS_API')
+            if db:
+                self.url = db
+            else:
+                self.url = "https://raw-data-api0.hotosm.org/v1"
             self.headers = {"accept": "application/json", "Content-Type": "application/json"}
         else:
-            log.info("Opening database connection to: %s" % uri['dbhost'])
-            connect = "PG: dbname=" + uri['dbname']
-            if 'dbname' in uri and uri['dbname'] is not None:
-                connect = f"dbname={uri['dbname']}"
-            elif 'dbhost'in uri and uri['dbhost'] == "localhost" and uri['dbhost'] is not None:
-                connect = f"host={uri['dbhost']} dbname={uri['dbname']}"
-            if 'dbuser' in uri and uri['dbuser'] is not None:
-                connect += f" user={uri['dbuser']}"
-            if 'dbpass' in uri and uri['dbpass'] is not None:
-                connect += f" password={uri['dbpass']}"
+            log.info("Opening database connection to: %s" % self.uri['dbhost'])
+            connect = "PG: dbname=" + self.uri['dbname']
+            if 'dbname' in self.uri and self.uri['dbname'] is not None:
+                connect = f"dbname={self.uri['dbname']}"
+            elif 'dbhost'in self.uri and self.uri['dbhost'] == "localhost" and self.uri['dbhost'] is not None:
+                connect = f"host={self.uri['dbhost']} dbname={self.uri['dbname']}"
+            if 'dbuser' in self.uri and self.uri['dbuser'] is not None:
+                connect += f" user={self.uri['dbuser']}"
+            if 'dbpass' in self.uri and self.uri['dbpass'] is not None:
+                connect += f" password={self.uri['dbpass']}"
             log.debug(f"Connecting with: {connect}")
             try:
                 self.dbshell = psycopg2.connect(connect)
                 self.dbshell.autocommit = True
                 self.dbcursor = self.dbshell.cursor()
                 if self.dbcursor.closed == 0:
-                    log.info(f"Opened cursor in {uri['dbname']}")
+                    log.info(f"Opened cursor in {self.uri['dbname']}")
             except Exception as e:
                 log.error(f"Couldn't connect to database: {e}")
 
@@ -381,7 +385,8 @@ class DatabaseAccess(object):
                 # This should be the version
                 tags[res[3][:-1]] = item[2]
             features.append(Feature(geometry=geom, properties=tags))
-        return features
+        return FeatureCollection(features)
+
 
     def queryRemote(self,
                     query: str = None,
@@ -435,7 +440,7 @@ class PostgresClient(DatabaseAccess):
             config (str): The filespec for the query config file
 
         Returns:
-            status (bool): Whether the data base connection was sucessful
+            (bool): Whether the data base connection was sucessful
         """
         super().__init__(uri)
         self.qc = QueryConfig()

@@ -73,7 +73,6 @@ RUN set -ex \
         "libspatialindex-dev" \
         "libproj-dev" \
         "libgeos-dev" \
-        "libgdal-dev" \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=extract-deps --chown=appuser \
     /opt/python/requirements.txt /opt/python/
@@ -109,7 +108,6 @@ RUN set -ex \
         "libspatialindex-c6" \
         "libproj25" \
         "libgeos-c1v5" \
-        "libgdal32" \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build \
     /root/.local \

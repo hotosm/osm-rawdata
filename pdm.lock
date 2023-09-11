@@ -6,7 +6,7 @@ groups = ["default", "docs", "test", "debug", "dev"]
 cross_platform = true
 static_urls = false
 lock_version = "4.3"
-content_hash = "sha256:73b72c5a5765f732e97766907848e9c3ee5518a42fdb9d18f41e0a9bfb4d44d0"
+content_hash = "sha256:6b3fd759f2c14679ba9e5c5c8e5320425666932a21823038f0e116619d8a7846"
 
 [[package]]
 name = "appnope"
@@ -306,15 +306,6 @@ version = "4.0.1"
 summary = "Python module for interacting with nested dicts as a single level dict with delimited keys."
 files = [
     {file = "flatdict-4.0.1.tar.gz", hash = "sha256:cd32f08fd31ed21eb09ebc76f06b6bd12046a24f77beb1fd0281917e47f26742"},
-]
-
-[[package]]
-name = "gdal"
-version = "3.6.4"
-requires_python = ">=3.6.0"
-summary = ""
-files = [
-    {file = "GDAL-3.6.4.tar.gz", hash = "sha256:c07d548cbd6544e8a51651fc1e487ca4b39e8fe6b5b3c886082d87f0e49e8313"},
 ]
 
 [[package]]

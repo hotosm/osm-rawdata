@@ -132,7 +132,7 @@ class DatabaseAccess(object):
 
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            db = os.getenv('UNDERPASS_API')
+            db = os.getenv('UNDERPASS_API_URL')
             if db:
                 self.url = db
             else:

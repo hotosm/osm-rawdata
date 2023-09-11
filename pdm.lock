@@ -6,7 +6,7 @@ groups = ["default", "docs", "test", "debug", "dev"]
 cross_platform = true
 static_urls = false
 lock_version = "4.3"
-content_hash = "sha256:d871f8b5203d8379bdc974c31c7a30811765e3339facd84e1f098e37fa682b8f"
+content_hash = "sha256:f8c3b48e82a1ae7d66d671baf39289c320c0783f33bb36f5e677cd3a2379c89b"
 
 [[package]]
 name = "appnope"
@@ -377,6 +377,14 @@ summary = "A platform independent file lock."
 files = [
     {file = "filelock-3.12.2-py3-none-any.whl", hash = "sha256:cbb791cdea2a72f23da6ac5b5269ab0a0d161e9ef0100e653b69049a7706d1ec"},
     {file = "filelock-3.12.2.tar.gz", hash = "sha256:002740518d8aa59a26b0c76e10fb8c6e15eae825d34b6fdf670333fd7b938d81"},
+]
+
+[[package]]
+name = "flatdict"
+version = "4.0.1"
+summary = "Python module for interacting with nested dicts as a single level dict with delimited keys."
+files = [
+    {file = "flatdict-4.0.1.tar.gz", hash = "sha256:cd32f08fd31ed21eb09ebc76f06b6bd12046a24f77beb1fd0281917e47f26742"},
 ]
 
 [[package]]

@@ -1,3 +1,9 @@
+## 0.1.2rc0 (2023-09-11)
+
+### Fix
+
+- UNDERPASS_API --> UNDERPASS_API_URL
+
 ## 0.1.1 (2023-09-11)
 
 ### Fix

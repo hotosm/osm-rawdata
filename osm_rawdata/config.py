@@ -117,7 +117,6 @@ class QueryConfig(object):
                     self.config['select'][table].append({k2: dict()})
 
         self.config['keep'] = data['keep']
-        
         # The table names are based on the Underpass schema, nodes, ways_poly,
         # ways_line, relations
         return self.config

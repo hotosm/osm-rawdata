@@ -364,7 +364,7 @@ class DatabaseAccess(object):
         # log.debug(query)
         self.dbcursor.execute(query)
         result = self.dbcursor.fetchall()
-        log.info("Query returned %d records" % len(result))
+        log.info("SQL Query returned %d records" % len(result))
         for item in result:
             if len(item) <= 1:
                 break
@@ -395,8 +395,8 @@ class DatabaseAccess(object):
                 # This should be the version
                 tags[res[3][:-1]] = item[2]
             features.append(Feature(geometry=geom, properties=tags))
-        # return FeatureCollection(features)
-        return features
+        return FeatureCollection(features)
+        #return features
 
 
     def queryRemote(self,
@@ -519,17 +519,17 @@ class PostgresClient(DatabaseAccess):
             poly = boundary["geometry"]
         wkt = shape(poly)
 
-        alldata = list()
         if self.dbshell:
             if not customsql:
                 sql = self.createSQL(self.qc, allgeom)
             else:
                 sql = [customsql]
+            alldata = list()
             for query in sql:
-                print(query)
+                # print(query)
                 result = self.queryLocal(query, allgeom, wkt)
                 if len(result) > 0:
-                    alldata.append(result)
+                    alldata += result['features']
             collection = FeatureCollection(alldata)
         else:
             request = self.createJson(self.qc, poly, allgeom)
@@ -555,6 +555,8 @@ Optionally a data file can be used.
     parser.add_argument("-s", "--sql", help="Custom SQL query to execute against the database")
     parser.add_argument("-a", "--all", help="All the geometry or just centroids")
     parser.add_argument("-c", "--config", help="The config file for the query (json or yaml)")
+    parser.add_argument("-o", "--outfile", default='extract.geojson',
+                        help="The output file")
     args = parser.parse_args()
 
     if len(argv) <= 1 or (args.sql is None and args.config is None):
@@ -580,19 +582,16 @@ Optionally a data file can be used.
             pg = PostgresClient(args.uri)
             sql = open(args.sql, 'r')
             result = pg.execQuery(poly, sql.read())
-            log.info("Query returned %d records" % len(result))
+            log.info(f"Custom Query returned {len(result['features'])} records")
         else:
             pg = PostgresClient(args.uri, args.config)
             result = pg.execQuery(poly)
-            log.info("Query returned %d records" % len(result))
+            log.info(f"Canned Query returned {len(result['features'])} records")
 
-        for entry in result['features']:
-            for key, value in entry.items():
-                # print(key)
-                if key == 'Feature' or key == 'type' or key == 'geometry':
-                    continue
-                print(f"Got: {value}")
-            # pg.cleanup(outfile)
+        outfile = open(args.outfile, 'w')
+        geojson.dump(result, outfile)
+
+        log.debug(f"Wrote {args.outfile}")
 
 if __name__ == "__main__":
     """This is just a hook so this file can be run standlone during development."""

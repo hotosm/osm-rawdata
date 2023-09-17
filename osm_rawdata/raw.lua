@@ -70,7 +70,7 @@ tables.ways_poly = osm2pgsql.define_table{
         { column = 'version', type = 'int' },
         { column = 'changeset', type = 'int' },
         { column = 'timestamp', sql_type = 'timestamp' },
-    -- This will store tags as jsonb type  
+    -- This will store tags as jsonb type
         { column = 'tags', type = 'jsonb' },
         { column = 'geom', type = 'polygon', projection = srid },
         { column = 'country', sql_type= 'int[]', create_only = true },

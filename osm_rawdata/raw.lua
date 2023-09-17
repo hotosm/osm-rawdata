@@ -18,17 +18,17 @@
 -- # <info@hotosm.org>
 -- This is lua script for osm2pgsql in order to create and process custom schema to store incoming osm data efficiently
 
--- osm2pgsql --create -H localhost -U admin -P 5432 -d postgres -W --extra-attributes --output=flex --style ./raw.lua nepal-latest-internal.osm.pbf 
+-- osm2pgsql --create -H localhost -U admin -P 5432 -d postgres -W --extra-attributes --output=flex --style ./raw.lua nepal-latest-internal.osm.pbf
 
 
--- Set projection to 4326 
+-- Set projection to 4326
 local srid = 4326
 
 local tables = {}
 
 tables.nodes = osm2pgsql.define_table{
-    name="nodes", 
-    -- This will generate a derived nodes table which stores all the nodes feature with their point geometry 
+    name="nodes",
+    -- This will generate a derived nodes table which stores all the nodes feature with their point geometry
     ids = {type='node',id_column = 'osm_id' },
     columns = {
         { column = 'uid', type = 'int' },
@@ -44,8 +44,8 @@ tables.nodes = osm2pgsql.define_table{
 }
 
 tables.ways_line = osm2pgsql.define_table{
-    name="ways_line", 
-    -- This will generate a derived ways line table which stores all the ways feature with linestring geometry 
+    name="ways_line",
+    -- This will generate a derived ways line table which stores all the ways feature with linestring geometry
     ids = {type='way',id_column = 'osm_id' },
     columns = {
         { column = 'uid', type = 'int' },
@@ -61,8 +61,8 @@ tables.ways_line = osm2pgsql.define_table{
 }
 
 tables.ways_poly = osm2pgsql.define_table{
-    name="ways_poly", 
-    -- This will generate a derived ways poly table which stores all the ways feature with polygon geometry 
+    name="ways_poly",
+    -- This will generate a derived ways poly table which stores all the ways feature with polygon geometry
     ids = {type='way',id_column = 'osm_id' },
     columns = {
         { column = 'uid', type = 'int' },
@@ -79,7 +79,7 @@ tables.ways_poly = osm2pgsql.define_table{
 }
 
 tables.rels = osm2pgsql.define_table{
-    name="relations", 
+    name="relations",
     -- This will generate a derived realtion  table which stores all the relation feature to query without storing meta data parts and members
 
     ids = {type='relation', id_column = 'osm_id' },

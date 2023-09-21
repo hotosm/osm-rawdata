@@ -21,25 +21,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: nodes; Type: TABLE; Schema: public; Owner: rob
---
-
-CREATE TABLE public.nodes (
-    osm_id bigint NOT NULL,
-    uid integer,
-    "user" text,
-    version integer,
-    changeset integer,
-    "timestamp" timestamp without time zone,
-    tags jsonb,
-    geom public.geometry(Point,4326),
-    grid integer
-);
-
-
-ALTER TABLE public.nodes OWNER TO rob;
-
---
 -- Name: ways_poly; Type: TABLE; Schema: public; Owner: rob
 --
 
@@ -58,13 +39,6 @@ CREATE TABLE public.ways_poly (
 
 
 ALTER TABLE public.ways_poly OWNER TO rob;
-
---
--- Name: nodes_geom_idx; Type: INDEX; Schema: public; Owner: rob
---
-
-CREATE INDEX nodes_geom_idx ON public.nodes USING gist (geom) WITH (fillfactor='100');
-
 
 --
 -- Name: ways_poly_geom_idx; Type: INDEX; Schema: public; Owner: rob

@@ -21,16 +21,22 @@
 
 from typing import List
 from typing import Optional
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Column, ARRAY
 from sqlalchemy import String, BigInteger, SmallInteger, DateTime
-from sqlalchemy.orm import DeclarativeBase
-# from sqlalchemy.orm import Mapped
-# from sqlalchemy.orm import mapped_column
-# from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+# from sqlalchemy.orm import MappedAsDataclass
+# from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
+from sqlalchemy.dialects.postgresql import JSONB
 
 
-class Base(DeclarativeBase):
+Base = declarative_base()
+# FmtmMetadata = Base.metadata
+
+class RawData(Base):
     """
     The base class for the Underpass database schema
 
@@ -40,42 +46,47 @@ class Base(DeclarativeBase):
         version (SmallInteger): The OSM Version
         changeset (BigInteger): The Changeset number
         timestamp (DateTime): The timestamp of the changeset
-        tags (ARRAY(String, dimension=2)): The OSM tags
+        tags (ARRAY(String)): The OSM tags
     """
-    uid: Column(BigInteger)
-    user: Column(String)
-    version: Column(SmallInteger)
-    changeset: Column(BigInteger)
-    timestamp: Column(DateTime)
-    tags: Column(ARRAY(String, dimension=2))
+    __tablename__ = 'base'
+    osm_id = Column(BigInteger, primary_key=True)
+    uid = Column(BigInteger)
+    user = Column(String, unique=True)
+    version = Column(SmallInteger)
+    changeset = Column(BigInteger)
+    timestamp = Column(DateTime)
+    tags = Column(ARRAY(String, dimensions=2))
 
-class Nodes(Base):
+class Nodes(RawData):
     """
     Class for a node
     
     Attributes:
         geom (Geometry): The geometry of the node
     """
-    __tablenames__ = 'points'
+    __tablename__ = 'points'
+    osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
     geom = Column(Geometry('POINT'))
 
-class Ways(Base):
-    """
-    Class for a polygon
+class Ways(RawData):
+     """
+     Class for a polygon
     
-    Attributes:
-        geom (Geometry): The geometry of the node
-    """
-    __tablenames__ = 'polygons'
-    geom = Column(Geometry('POLYGON'))
+     Attributes:
+         geom (Geometry): The geometry of the node
+     """
+     __tablename__ = 'polygons'
+     osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
+     geom = Column(Geometry('POLYGON'))
 
-class Lines(Base):
+class Lines(RawData):
     """
-    Class for a linestring
+     Class for a linestring
     
-    Attributes:
-        geom (Geometry): The geometry of the node
-    """
-    __tablenames__ = 'lines'
+     Attributes:
+         geom (Geometry): The geometry of the node
+     """
+    __tablename__ = 'lines'
+    osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
     geom = Column(Geometry('LINESTRING'))
 

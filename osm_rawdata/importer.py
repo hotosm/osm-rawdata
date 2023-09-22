@@ -27,6 +27,11 @@ import psycopg2
 from sys import argv
 import requests
 from osm_fieldwork.make_data_extract import uriParser
+import pandas as pd
+from shapely import wkb
+from sqlalchemy import create_engine
+from osm_rawdata.db_models import Nodes, Ways, Lines
+
 
 # Find the other files for this project
 import osm_rawdata as rw
@@ -35,7 +40,7 @@ rootdir = rw.__path__[0]
 # Instantiate logger
 log = logging.getLogger(__name__)
 
-class OsmImporter(object):
+class MapImporter(object):
     def __init__(self,
                  dburi: str,
                  ):
@@ -48,6 +53,7 @@ class OsmImporter(object):
         Returns:
             (OsmImporter): An instance of this class
         """
+        self.dburi = dburi
         self.dbshell = None
         self.dbcursor = None
         if dburi:
@@ -68,8 +74,9 @@ class OsmImporter(object):
             self.dbcursor.execute(sql)
 
             # Create indexes to improve peformance
-            self.dbcursor.execute("cluster ways_poly using ways_poly_geom_idx;")
-            self.dbcursor.execute("create index on ways_poly using gin(tags)")
+            # self.dbcursor.execute(f"CREATE TABLE ways_poly(); ")
+            # self.dbcursor.execute("cluster ways_poly using ways_poly_geom_idx;")
+            # self.dbcursor.execute("create index on ways_poly using gin(tags)")
 
             
     def connect(self,
@@ -104,7 +111,7 @@ class OsmImporter(object):
         except Exception as e:
             log.error(f"Couldn't connect to database: {e}")
 
-    def importer(self,
+    def importOSM(self,
                infile: str,
                ):
         """
@@ -125,6 +132,27 @@ class OsmImporter(object):
                                  f'{infile}']
                                 )
         result.check_returncode()
+
+    def importParquet(self,
+               infile: str,
+               ):
+        """
+        Import an OSM data file into a postgres database.
+        
+        Args:
+            infile (str): The file to import
+
+        Returns:
+            (bool): Whether the import finished sucessfully
+         """
+        # create_engine("postgresql+psycopg2://scott:tiger@localhost/mydatabase")
+        engine = create_engine(f"postgresql://{self.dburi}", echo=True)
+        pq_file=(infile)
+        df = pd.read_parquet(pq_file,engine='fastparquet')
+        for index in range(len(df)):
+            print(df.loc[index])
+        # wkb.loads(df['geometry']
+        print(df)
 
 def main():
     """This main function lets this class be run standalone by a bash script"""
@@ -156,8 +184,9 @@ def main():
         ch.setFormatter(formatter)
         log.addHandler(ch)
 
-    oi = OsmImporter(args.uri)
-    if oi.importer(args.infile):
+    mi = MapImporter(args.uri)
+    #if mi.importOSM(args.infile):
+    if mi.importParquet(args.infile):
         log.info(f'Imported {args.infile} into {args.uri}')
 
 if __name__ == "__main__":

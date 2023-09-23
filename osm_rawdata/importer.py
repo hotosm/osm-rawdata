@@ -187,6 +187,7 @@ class MapImporter(object):
                 #     tags['name'] = entry['class']
                 else:
                     tags = dict()
+                tags['building'] = 'yes'        
                 s = select(cast(tags, JSONB))
 
                 geom = entry['geometry']

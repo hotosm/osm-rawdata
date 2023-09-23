@@ -24,13 +24,9 @@ from typing import Optional
 from sqlalchemy import ForeignKey, Column, ARRAY
 from sqlalchemy import String, BigInteger, SmallInteger, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Mapped
-# from sqlalchemy.orm import mapped_column
-# from sqlalchemy.orm import MappedAsDataclass
-# from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.dialects.postgresql import HSTORE, JSONB
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
-from sqlalchemy.dialects.postgresql import JSONB
 
 
 Base = declarative_base()
@@ -56,7 +52,8 @@ class RawData(Base):
     version = Column(SmallInteger)
     changeset = Column(BigInteger)
     timestamp = Column(DateTime)
-    tags = Column(ARRAY(String, dimensions=2))
+    tags = Column(JSONB)
+    # tags = Column(ARRAY(String, dimensions=2))
 
 class Nodes(RawData):
     """

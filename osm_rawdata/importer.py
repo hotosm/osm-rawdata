@@ -26,6 +26,7 @@ import subprocess
 import psycopg2
 from sys import argv
 import requests
+import math
 from osm_fieldwork.make_data_extract import uriParser
 import pandas as pd
 from shapely import wkb
@@ -35,8 +36,8 @@ from osm_rawdata.db_models import Nodes, Ways, Lines, Base
 from osm_rawdata.db_schemas import WayBase
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy_utils import database_exists, create_database
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy import column, inspect, table, func
+from sqlalchemy.dialects.postgresql import insert, HSTORE, JSONB
+from sqlalchemy import column, inspect, table, func, cast
 
 
 # Find the other files for this project
@@ -168,30 +169,45 @@ class MapImporter(object):
                 column("osm_id"),
                 column("user"),
                 column("geom"),
-                #column("tags"),
+                column("tags"),
             )
             pq_file=(infile)
             df = pd.read_parquet(pq_file,engine='fastparquet')
             for index in range(len(df)):
                 entry = df.loc[index]
-                if entry['height']:
-                    tags = ({'height': entry['height']})
+                if not math.isnan(entry['height']):
+                    tags['height'] = entry['height']
+                elif not math.isnan(entry['numfloors']):
+                    tags['levels'] = int(entry['numfloors'])
+                # elif entry['sources'] != None:
+                #     tags['source'] = entry['sources']
+                # elif entry['names'] != None:
+                #     tags['name'] = entry['names']
+                # elif entry['class'] != None:
+                #     tags['name'] = entry['class']
                 else:
-                    tags = list()
+                    tags = dict()
+                s = select(cast(tags, JSONB))
+
                 geom = entry['geometry']
-                # wkb.loads(df['geometry']
-                ins = insert(ways).values(
-                    osm_id = index,
-                    user = entry['id'],
-                    geom = geom,
-                    #tags = tags,
-                )
-                s = select(func.ARRAY_CONSTRUCT(tags))
-                # The underpass schema appears to have no contraints
-                #sql = ins.on_conflict_do_update(
-                #    constraint="osm_id",
-                #    set_ = dict(osm_id = entry['id'], geom = geom),)
-                conn.execute(ins)
+                type = wkb.loads(entry['geometry']).geom_type
+                if type != 'Polygon':
+                    log.warning("Got Multipolygon")
+                    continue
+                if len(tags) != 0:
+                    sql = insert(ways).values(
+                        osm_id = index,
+                        user = entry['id'],
+                        geom = geom,
+                        tags = s,
+                    )
+                else:
+                    sql = insert(ways).values(
+                        osm_id = index,
+                        user = entry['id'],
+                        geom = geom,
+                    )
+                conn.execute(sql)
                 conn.commit()
         except Exception as e:
             log.error(e)

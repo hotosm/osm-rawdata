@@ -29,8 +29,14 @@ import requests
 from osm_fieldwork.make_data_extract import uriParser
 import pandas as pd
 from shapely import wkb
-from sqlalchemy import create_engine
-from osm_rawdata.db_models import Nodes, Ways, Lines
+from sqlalchemy import create_engine, MetaData
+from sqlmodel import create_engine, Field, Session, SQLModel, select
+from osm_rawdata.db_models import Nodes, Ways, Lines, Base
+from osm_rawdata.db_schemas import WayBase
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import column, inspect, table, func
 
 
 # Find the other files for this project
@@ -145,13 +151,50 @@ class MapImporter(object):
         Returns:
             (bool): Whether the import finished sucessfully
          """
-        # create_engine("postgresql+psycopg2://scott:tiger@localhost/mydatabase")
         engine = create_engine(f"postgresql://{self.dburi}", echo=True)
-        pq_file=(infile)
-        df = pd.read_parquet(pq_file,engine='fastparquet')
-        for index in range(len(df)):
-            print(df.loc[index])
-        # wkb.loads(df['geometry']
+        if not database_exists(engine.url):
+            create_database(engine.url)
+        else:
+            conn = engine.connect()
+            
+        session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        
+        meta = MetaData()
+        meta.create_all(engine)
+
+        try:
+            ways = table(
+                "ways_poly",
+                column("osm_id"),
+                column("user"),
+                column("geom"),
+                #column("tags"),
+            )
+            pq_file=(infile)
+            df = pd.read_parquet(pq_file,engine='fastparquet')
+            for index in range(len(df)):
+                entry = df.loc[index]
+                if entry['height']:
+                    tags = ({'height': entry['height']})
+                else:
+                    tags = list()
+                geom = entry['geometry']
+                # wkb.loads(df['geometry']
+                ins = insert(ways).values(
+                    osm_id = index,
+                    user = entry['id'],
+                    geom = geom,
+                    #tags = tags,
+                )
+                s = select(func.ARRAY_CONSTRUCT(tags))
+                # The underpass schema appears to have no contraints
+                #sql = ins.on_conflict_do_update(
+                #    constraint="osm_id",
+                #    set_ = dict(osm_id = entry['id'], geom = geom),)
+                conn.execute(ins)
+                conn.commit()
+        except Exception as e:
+            log.error(e)
         print(df)
 
 def main():

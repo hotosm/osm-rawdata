@@ -25,7 +25,7 @@ from sqlalchemy import ForeignKey, Column, ARRAY
 from sqlalchemy import String, BigInteger, SmallInteger, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
+# from sqlalchemy.orm import mapped_column
 # from sqlalchemy.orm import MappedAsDataclass
 # from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship
@@ -41,15 +41,16 @@ class RawData(Base):
     The base class for the Underpass database schema
 
     Attributes:
-        uid (BigInteger): The ID of the user.
-        user (String): The username of the user.
+        id (BigInteger): The ID of the feature
+        uid (BigInteger): The ID of the user
+        user (String): The username of the user
         version (SmallInteger): The OSM Version
         changeset (BigInteger): The Changeset number
         timestamp (DateTime): The timestamp of the changeset
         tags (ARRAY(String)): The OSM tags
     """
     __tablename__ = 'base'
-    osm_id = Column(BigInteger, primary_key=True)
+    osm_id = Column(BigInteger, primary_key=True, unique=True)
     uid = Column(BigInteger)
     user = Column(String, unique=True)
     version = Column(SmallInteger)
@@ -62,9 +63,10 @@ class Nodes(RawData):
     Class for a node
     
     Attributes:
+        uid (BigInteger): The ID of the user.
         geom (Geometry): The geometry of the node
     """
-    __tablename__ = 'points'
+    __tablename__ = 'nodes'
     osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
     geom = Column(Geometry('POINT'))
 
@@ -73,10 +75,11 @@ class Ways(RawData):
      Class for a polygon
     
      Attributes:
-         geom (Geometry): The geometry of the node
+        uid (BigInteger): The ID of the user.
+        geom (Geometry): The geometry of the node
      """
-     __tablename__ = 'polygons'
-     osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
+     __tablename__ = 'ways_poly'
+     osm_id = Column(BigInteger, ForeignKey("base.osm_id"), unique=True)
      geom = Column(Geometry('POLYGON'))
 
 class Lines(RawData):
@@ -84,9 +87,10 @@ class Lines(RawData):
      Class for a linestring
     
      Attributes:
-         geom (Geometry): The geometry of the node
+        uid (BigInteger): The ID of the user.
+        geom (Geometry): The geometry of the node
      """
-    __tablename__ = 'lines'
+    __tablename__ = 'ways_line'
     osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
     geom = Column(Geometry('LINESTRING'))
 

@@ -20,7 +20,7 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 readme = "README.md"
-license = "GPL-3.0-only"
+license = "AGPL-3.0-only"
 keywords = ["hot", "osm", "openstreetmap"]
 classifiers = [
     "Topic :: Utilities",

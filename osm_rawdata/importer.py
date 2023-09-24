@@ -29,6 +29,7 @@ import requests
 import math
 from osm_fieldwork.make_data_extract import uriParser
 import pandas as pd
+import pyarrow.parquet as pq
 from shapely import wkb
 from sqlalchemy import create_engine, MetaData
 from sqlmodel import create_engine, Field, Session, SQLModel, select
@@ -38,7 +39,6 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.dialects.postgresql import insert, HSTORE, JSONB
 from sqlalchemy import column, inspect, table, func, cast
-
 
 # Find the other files for this project
 import osm_rawdata as rw
@@ -171,48 +171,59 @@ class MapImporter(object):
                 column("geom"),
                 column("tags"),
             )
-            pq_file=(infile)
-            df = pd.read_parquet(pq_file,engine='fastparquet')
-            for index in range(len(df)):
-                entry = df.loc[index]
-                if not math.isnan(entry['height']):
-                    tags['height'] = entry['height']
-                elif not math.isnan(entry['numfloors']):
-                    tags['levels'] = int(entry['numfloors'])
-                # elif entry['sources'] != None:
-                #     tags['source'] = entry['sources']
-                # elif entry['names'] != None:
-                #     tags['name'] = entry['names']
-                # elif entry['class'] != None:
-                #     tags['name'] = entry['class']
+            pfile = pq.ParquetFile(infile)
+            data = pfile.read()
+            index = -1
+            for i in range(0, len(data) - 1):
+                entry = dict()
+                entry['fixme'] = data[0][i].as_py()
+                # entry['names']  = data[3][i].as_py()
+                # entry['level']  = data[4][i].as_py()
+                if data[5][i].as_py() is not None:
+                    entry['height'] = int(data[5][i].as_py())
                 else:
-                    tags = dict()
-                tags['building'] = 'yes'        
-                s = select(cast(tags, JSONB))
-
+                    entry['height'] = 0                    
+                if data[6][i].as_py() is not None:
+                    entry['levels'] = int(data[6][i].as_py())
+                else:
+                    entry['levels'] = 0
+                entry['source'] = data[8][i][0][0][1].as_py()
+                try:
+                    osm = data[8][i][0][2][1].as_py().split('@')
+                    if len(osm) > 1:
+                        entry['id'] = int(osm[0][1:])
+                        entry['version'] = int(osm[1])
+                    else:
+                        entry['id'] = int(osm[0])
+                except:
+                    entry['id'] = 0
+                entry['geometry'] = data[10][i].as_py()
+                entry['building'] = 'yes'     
                 geom = entry['geometry']
                 type = wkb.loads(entry['geometry']).geom_type
                 if type != 'Polygon':
                     log.warning("Got Multipolygon")
                     continue
-                if len(tags) != 0:
-                    sql = insert(ways).values(
-                        osm_id = index,
-                        user = entry['id'],
-                        geom = geom,
-                        tags = s,
-                    )
-                else:
-                    sql = insert(ways).values(
-                        osm_id = index,
-                        user = entry['id'],
-                        geom = geom,
-                    )
+                # FIXME: This is a hack, for some weird reason the
+                # entry dict doesn't convert to jsonb, it just
+                # becomes bytes
+                tags = {'building': 'yes',
+                        'source': entry['source'],
+                        'levels': entry['levels'],
+                        'height': entry['height']
+                        }
+                scalar = select(cast(tags, JSONB))
+                sql = insert(ways).values(
+                    osm_id = entry['id'],
+                    geom = geom,
+                    tags = scalar,
+                )
+                # index -= 1
                 conn.execute(sql)
                 conn.commit()
+                print(f"FIXME2: {entry}")
         except Exception as e:
             log.error(e)
-        print(df)
 
 def main():
     """This main function lets this class be run standalone by a bash script"""

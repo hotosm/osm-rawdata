@@ -232,7 +232,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog="config",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="Parse YAML or JSON SQL config file",
+        description=Import data into a postgres database",
         epilog="""
         This should only be run standalone for debugging purposes.
         """

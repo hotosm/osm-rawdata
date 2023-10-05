@@ -59,7 +59,7 @@ class Nodes(Base):
     Class for a node
     
     Attributes:
-        osm_id (BigInteger): The ID of the feature
+        id (BigInteger): The ID of the feature
         geom (Geometry): The geometry of the node
         tags (JSONB): The OSM tags
     """
@@ -78,7 +78,7 @@ class Ways(Base):
         geom (Geometry): The geometry of the node
      """
      __tablename__ = 'ways_poly'
-     osm_id = Column(BigInteger, primary_key=True, unique=True)
+     id = Column(BigInteger, primary_key=True, autoincrement=True)
      # osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
      tags = Column(JSONB)
      geom = Column(Geometry('POLYGON', srid=4326))
@@ -93,7 +93,7 @@ class Lines(Base):
      """
     __tablename__ = 'ways_line'
     # osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
-    osm_id = Column(BigInteger, primary_key=True, unique=True)
+    id = Column(BigInteger, primary_key=True, unique=True)
     tags = Column(JSONB)
     geom = Column(Geometry('LINESTRING', srid=4326))
 

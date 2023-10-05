@@ -74,7 +74,7 @@ class MapImporter(object):
             self.db = engine.connect()
 
             # Add the extension we need to process the data
-            sql = text("CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;")
+            sql = text("CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;CREATE EXTENSION IF NOT EXISTS dblink;")
             self.db.execute(sql)
             self.db.commit()
 
@@ -141,7 +141,7 @@ class MapImporter(object):
         try:
             ways = table(
                 "ways_poly",
-                column("osm_id"),
+                column("id"),
                 column("user"),
                 column("geom"),
                 column("tags"),
@@ -168,7 +168,7 @@ class MapImporter(object):
                     #log.warning("Ignoring OpenStreetMap entries as they are out of date")
                     # osm = data[8][i][0][2][1].as_py().split('@')
                     continue
-                entry['osm_id'] = index
+                entry['id'] = index
                 # LIDAR has no record ID
                 try:
                     entry['record'] = data[8][i][0][2][1].as_py()
@@ -192,7 +192,7 @@ class MapImporter(object):
                         }
                 scalar = select(cast(tags, JSONB))
                 sql = insert(ways).values(
-                    osm_id = entry['osm_id'],
+                    # osm_id = entry['osm_id'],
                     geom = geom,
                     tags = scalar,
                 )

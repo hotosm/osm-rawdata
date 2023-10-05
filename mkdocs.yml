@@ -58,7 +58,9 @@ plugins:
 
 nav:
   - About: about.md
-  - Usage:
+  - Utilities:
+      - Importer: importer.md
+  - File Formats:
       - JSON: json.md
       - YAML: yaml.md
   - API: api.md

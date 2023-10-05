@@ -48,20 +48,3 @@ enhanced version to define the queries.
 
 The JSON format is also supported, both parsing the config file and
 also generating that query from a YAML config file.
-
-# The files
-
-## geofabrik.py
-
-This is a simple utility to download a file from GeoGFabrik.
-
-## config.py
-
-This class parses either then JSON or YAML config file formatted
-files, and creates a data structure used later to generater the
-database query.
-
-## postgres.py
-
-This class handles working with the postgres database. It sets up the
-connections, and handles processing the results from the queries.

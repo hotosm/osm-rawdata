@@ -18,3 +18,13 @@ heading_level: 3
 options:
 show_source: false
 heading_level: 3
+
+::: osm_rawdata.geofabrik.GeoFabrik
+options:
+show_source: false
+heading_level: 3
+
+::: osm_rawdata.config.QueryConfig
+options:
+show_source: false
+heading_level: 3

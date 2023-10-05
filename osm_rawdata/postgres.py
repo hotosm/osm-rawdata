@@ -139,7 +139,7 @@ class DatabaseAccess(object):
                 self.url = "https://raw-data-api0.hotosm.org/v1"
             self.headers = {"accept": "application/json", "Content-Type": "application/json"}
         else:
-            log.info("Opening database connection to: %s" % self.uri['dbhost'])
+            log.info(f"Opening database connection to: {self.uri['dbname']}")
             connect = "PG: dbname=" + self.uri['dbname']
             if 'dbname' in self.uri and self.uri['dbname'] is not None:
                 connect = f"dbname={self.uri['dbname']}"
@@ -250,7 +250,7 @@ class DatabaseAccess(object):
             allgeom (bool): Whether to return centroids or all the full geometry
                 
         Returns:
-                query (FeatureCollection): the json
+            (FeatureCollection): the json
         """
         sql = list()
         query = ""
@@ -343,14 +343,16 @@ class DatabaseAccess(object):
                 query (FeatureCollection): the results of the query
         """
         features = list()
-        sql = f"DROP VIEW IF EXISTS ways_view;CREATE VIEW ways_view AS SELECT * FROM ways_poly WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
-        self.dbcursor.execute(sql)
-        sql = f"DROP VIEW IF EXISTS nodes_view;CREATE VIEW nodes_view AS SELECT * FROM nodes WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
-        self.dbcursor.execute(sql)
-        sql = f"DROP VIEW IF EXISTS lines_view;CREATE VIEW lines_view AS SELECT * FROM ways_line WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
-        self.dbcursor.execute(sql)
-        sql = f"DROP VIEW IF EXISTS relations_view;CREATE TEMP VIEW relations_view AS SELECT * FROM nodes WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
-        self.dbcursor.execute(sql)
+        # if no boundary, it's already been setup
+        if boundary:
+            sql = f"DROP VIEW IF EXISTS ways_view;CREATE VIEW ways_view AS SELECT * FROM ways_poly WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
+            self.dbcursor.execute(sql)
+            sql = f"DROP VIEW IF EXISTS nodes_view;CREATE VIEW nodes_view AS SELECT * FROM nodes WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
+            self.dbcursor.execute(sql)
+            sql = f"DROP VIEW IF EXISTS lines_view;CREATE VIEW lines_view AS SELECT * FROM ways_line WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
+            self.dbcursor.execute(sql)
+            sql = f"DROP VIEW IF EXISTS relations_view;CREATE TEMP VIEW relations_view AS SELECT * FROM nodes WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
+            self.dbcursor.execute(sql)
 
         if query.find(" ways_poly ") > 0:
             query = query.replace("ways_poly", "ways_view")

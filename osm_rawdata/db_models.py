@@ -67,7 +67,7 @@ class Nodes(Base):
     osm_id = Column(BigInteger, primary_key=True, unique=True)
     # osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
     tags = Column(JSONB)
-    geom = Column(Geometry('POINT'))
+    geom = Column(Geometry('POINT', srid=4326))
 
 class Ways(Base):
      """
@@ -81,7 +81,7 @@ class Ways(Base):
      osm_id = Column(BigInteger, primary_key=True, unique=True)
      # osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
      tags = Column(JSONB)
-     geom = Column(Geometry('POLYGON'))
+     geom = Column(Geometry('POLYGON', srid=4326))
 
 class Lines(Base):
     """
@@ -95,5 +95,5 @@ class Lines(Base):
     # osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
     osm_id = Column(BigInteger, primary_key=True, unique=True)
     tags = Column(JSONB)
-    geom = Column(Geometry('LINESTRING'))
+    geom = Column(Geometry('LINESTRING', srid=4326))
 

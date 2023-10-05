@@ -450,7 +450,7 @@ class PostgresClient(DatabaseAccess):
         This is a client for a postgres database.
 
         Args:
-            dburi (str): The URI string for the database connection
+            uri (str): The URI string for the database connection
             config (str): The filespec for the query config file
 
         Returns:
@@ -506,7 +506,7 @@ class PostgresClient(DatabaseAccess):
 
         Args:
             boundary (FeatureCollection): The boundary polygon
-            custom SQL (str): Don't create the SQL, use the one supplied
+            customsql (str): Don't create the SQL, use the one supplied
             allgeom (bool): Whether to return centroids or all the full geometry
                 
         Returns:

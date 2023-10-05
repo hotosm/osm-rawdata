@@ -8,19 +8,25 @@ authors = [
 ]
 dependencies = [
     "deepdiff>=6.3.1",
+    "GDAL==3.6.4",
     "landez>=2.5.0",
+    "ogr>=0.0.1",
     "osmium>=3.6.0",
     "pyparsing>=3.0.9",
     "PyYAML>=6.0.1",
     "requests>=2.28.2",
     "shapely>=2.0.1",
     "geojson>=2.5.0",
-    "psycopg2>=2.9.7",
-    "flatdict>=4.0.1",
+    "pyarrow>=1.24.2",
+    "sqlalchemy>=2.0.1",
+    "GeoAlchemy2>=0.12.5",
+    "sqlmodel>=0.0.8",
+    "SQLAlchemy>=1.4.41",
+    "SQLAlchemy-Utils>=0.41.1",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
-license = "AGPL-3.0-only"
+license = "GPL-3.0-only"
 keywords = ["hot", "osm", "openstreetmap"]
 classifiers = [
     "Topic :: Utilities",
@@ -48,7 +54,7 @@ pythonpath = "osm_rawdata"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.1.2rc0"
+version = "0.1.0"
 version_files = [
     "pyproject.toml:version",
     "osm_rawdata/__version__.py",

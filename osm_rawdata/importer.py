@@ -232,7 +232,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog="config",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=Import data into a postgres database",
+        description="Import data into a postgres database",
         epilog="""
         This should only be run standalone for debugging purposes.
         """

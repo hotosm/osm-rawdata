@@ -37,37 +37,39 @@ class RawData(Base):
     The base class for the Underpass database schema
 
     Attributes:
-        id (BigInteger): The ID of the feature
+        osm_id (BigInteger): The ID of the feature
         uid (BigInteger): The ID of the user
         user (String): The username of the user
         version (SmallInteger): The OSM Version
         changeset (BigInteger): The Changeset number
         timestamp (DateTime): The timestamp of the changeset
-        tags (ARRAY(String)): The OSM tags
+        tags (JSONB): The OSM tags
     """
     __tablename__ = 'base'
     osm_id = Column(BigInteger, primary_key=True, unique=True)
     uid = Column(BigInteger)
-    user = Column(String, unique=True)
+    user = Column(String)
     version = Column(SmallInteger)
     changeset = Column(BigInteger)
     timestamp = Column(DateTime)
     tags = Column(JSONB)
-    # tags = Column(ARRAY(String, dimensions=2))
 
-class Nodes(RawData):
+class Nodes(Base):
     """
     Class for a node
     
     Attributes:
-        uid (BigInteger): The ID of the user.
+        osm_id (BigInteger): The ID of the feature
         geom (Geometry): The geometry of the node
+        tags (JSONB): The OSM tags
     """
     __tablename__ = 'nodes'
-    osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
+    osm_id = Column(BigInteger, primary_key=True, unique=True)
+    # osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
+    tags = Column(JSONB)
     geom = Column(Geometry('POINT'))
 
-class Ways(RawData):
+class Ways(Base):
      """
      Class for a polygon
     
@@ -76,10 +78,12 @@ class Ways(RawData):
         geom (Geometry): The geometry of the node
      """
      __tablename__ = 'ways_poly'
-     osm_id = Column(BigInteger, ForeignKey("base.osm_id"), unique=True)
+     osm_id = Column(BigInteger, primary_key=True, unique=True)
+     # osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
+     tags = Column(JSONB)
      geom = Column(Geometry('POLYGON'))
 
-class Lines(RawData):
+class Lines(Base):
     """
      Class for a linestring
     
@@ -88,6 +92,8 @@ class Lines(RawData):
         geom (Geometry): The geometry of the node
      """
     __tablename__ = 'ways_line'
-    osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
+    # osm_id = Column(BigInteger, ForeignKey("base.osm_id"))
+    osm_id = Column(BigInteger, primary_key=True, unique=True)
+    tags = Column(JSONB)
     geom = Column(Geometry('LINESTRING'))
 

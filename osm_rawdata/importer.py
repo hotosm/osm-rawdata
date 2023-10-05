@@ -31,7 +31,7 @@ from osm_fieldwork.make_data_extract import uriParser
 import pandas as pd
 import pyarrow.parquet as pq
 from shapely import wkb
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, text
 from sqlmodel import create_engine, Field, Session, SQLModel, select
 from osm_rawdata.db_models import Nodes, Ways, Lines, Base
 from osm_rawdata.db_schemas import WayBase
@@ -39,6 +39,10 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.dialects.postgresql import insert, HSTORE, JSONB
 from sqlalchemy import column, inspect, table, func, cast
+from codetiming import Timer
+from progress.spinner import PixelSpinner
+from geoalchemy2 import Geometry
+import osm_rawdata.db_models
 
 # Find the other files for this project
 import osm_rawdata as rw
@@ -53,7 +57,7 @@ class MapImporter(object):
                  ):
         """
         This is a class to setup a local database for OSM data.
-        
+
         Args:
             dburi (str): The URI string for the database connection
 
@@ -61,69 +65,36 @@ class MapImporter(object):
             (OsmImporter): An instance of this class
         """
         self.dburi = dburi
-        self.dbshell = None
-        self.dbcursor = None
+        self.db = None
         if dburi:
             self.uri = uriParser(dburi)
-            self.session = requests.Session()
-            # create the database if it doesn't exist
-            postgres = self.uri.copy()
-            postgres['dbname'] = 'postgres'
-            self.connect(postgres)
-            try:
-                self.dbcursor.execute(f"CREATE DATABASE {self.uri['dbname']}")
-            except:
-                log.warning(f"Database {self.uri['dbname']} already exists")
+            engine = create_engine(f"postgresql://{self.dburi}", echo=True)
+            if not database_exists(engine.url):
+                create_database(engine.url)
+            self.db = engine.connect()
 
-            # Now connect to the database we just created
-            self.connect(self.uri)
-            sql = "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;"
-            self.dbcursor.execute(sql)
+            # Add the extension we need to process the data
+            sql = text("CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;")
+            self.db.execute(sql)
+            self.db.commit()
 
-            # Create indexes to improve peformance
-            # self.dbcursor.execute(f"CREATE TABLE ways_poly(); ")
-            # self.dbcursor.execute("cluster ways_poly using ways_poly_geom_idx;")
-            # self.dbcursor.execute("create index on ways_poly using gin(tags)")
+            Base.metadata.create_all(bind=engine)
 
-            
-    def connect(self,
-                 dburi: dict,
-                 ):
-        """
-        This is a class to setup a local database for OSM data.
+            session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         
-        Args:
-            dburi (dict): The URI string for the database connection
-
-        Returns:
-            (OsmImporter): An instance of this class
-        """
-        log.info("Opening database connection to: %s" % self.uri['dbhost'])
-        connect = "PG: dbname=" + self.uri['dbname']
-        if 'dbname' in self.uri and self.uri['dbname'] is not None:
-            connect = f"dbname={self.uri['dbname']}"
-        elif 'dbhost'in self.uri and self.uri['dbhost'] == "localhost" and self.uri['dbhost'] is not None:
-            connect = f"host={self.uri['dbhost']} dbname={self.uri['dbname']}"
-        if 'dbuser' in self.uri and self.uri['dbuser'] is not None:
-            connect += f" user={self.uri['dbuser']}"
-        if 'dbpass' in self.uri and self.uri['dbpass'] is not None:
-            connect += f" password={self.uri['dbpass']}"
-        log.debug(f"Connecting with: {connect}")
-        try:
-            self.dbshell = psycopg2.connect(connect)
-            self.dbshell.autocommit = True
-            self.dbcursor = self.dbshell.cursor()
-            if self.dbcursor.closed == 0:
-                log.info(f"Opened cursor in {self.uri['dbname']}")
-        except Exception as e:
-            log.error(f"Couldn't connect to database: {e}")
+            # Create indexes to improve peformance
+            #sql = text("cluster ways_poly using ways_poly_geom_idx;")
+            #self.db.execute(sql)
+            #sql("create index on ways_poly using gin(tags)")
+            #self.db.execute(sql)
+            #self.db.commit()
 
     def importOSM(self,
                infile: str,
                ):
         """
         Import an OSM data file into a postgres database.
-        
+
         Args:
             infile (str): The file to import
 
@@ -144,8 +115,101 @@ class MapImporter(object):
                infile: str,
                ):
         """
-        Import an OSM data file into a postgres database.
+        Import an Overture parquet data file into a postgres database.
+
+        Args:
+            infile (str): The file to import
+
+        Returns:
+            (bool): Whether the import finished sucessfully
+         """
+        #engine = create_engine(f"postgresql://{self.dburi}")
+        # engine = create_engine(f"postgresql://{self.dburi}", echo=True)
+        # if not database_exists(engine.url):
+        #     create_database(engine.url)
+        # else:
+        #     conn = engine.connect()
+            
+        # session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         
+        # meta = MetaData()
+        # meta.create_all(engine)
+
+        spin = PixelSpinner(f'Processing {infile}...')
+        timer = Timer(text="importParquet() took {seconds:.0f}s")
+        timer.start()
+        try:
+            ways = table(
+                "ways_poly",
+                column("osm_id"),
+                column("user"),
+                column("geom"),
+                column("tags"),
+            )
+            pfile = pq.ParquetFile(infile)
+            data = pfile.read()
+            index = -1
+            for i in range(0, len(data) - 1):
+                spin.next()
+                entry = dict()
+                entry['fixme'] = data[0][i].as_py()
+                # entry['names']  = data[3][i].as_py()
+                # entry['level']  = data[4][i].as_py()
+                if data[5][i].as_py() is not None:
+                    entry['height'] = int(data[5][i].as_py())
+                else:
+                    entry['height'] = 0                    
+                if data[6][i].as_py() is not None:
+                    entry['levels'] = int(data[6][i].as_py())
+                else:
+                    entry['levels'] = 0
+                entry['source'] = data[8][i][0][0][1].as_py()
+                if entry['source'] == 'OpenStreetMap':
+                    #log.warning("Ignoring OpenStreetMap entries as they are out of date")
+                    # osm = data[8][i][0][2][1].as_py().split('@')
+                    continue
+                entry['osm_id'] = index
+                # LIDAR has no record ID
+                try:
+                    entry['record'] = data[8][i][0][2][1].as_py()
+                except:
+                    entry['record'] = 0
+                entry['geometry'] = data[10][i].as_py()
+                entry['building'] = 'yes'     
+                geom = entry['geometry']
+                type = wkb.loads(entry['geometry']).geom_type
+                if type != 'Polygon':
+                    #log.warning("Got Multipolygon")
+                    continue
+                # FIXME: This is a hack, for some weird reason the
+                # entry dict doesn't convert to jsonb, it just
+                # becomes bytes
+                tags = {'building': 'yes',
+                        'source': entry['source'],
+                        'levels': entry['levels'],
+                        'record': entry['record'],
+                        'height': entry['height']
+                        }
+                scalar = select(cast(tags, JSONB))
+                sql = insert(ways).values(
+                    osm_id = entry['osm_id'],
+                    geom = geom,
+                    tags = scalar,
+                )
+                index -= 1
+                self.db.execute(sql)
+                self.db.commit()
+                # print(f"FIXME2: {entry}")
+        except Exception as e:
+            log.error(e)
+        timer.stop()
+
+    def importGeoJson(self,
+               infile: str,
+               ):
+        """
+        Import a GeoJson data file into a postgres database.
+
         Args:
             infile (str): The file to import
 
@@ -162,69 +226,7 @@ class MapImporter(object):
         
         meta = MetaData()
         meta.create_all(engine)
-
-        try:
-            ways = table(
-                "ways_poly",
-                column("osm_id"),
-                column("user"),
-                column("geom"),
-                column("tags"),
-            )
-            pfile = pq.ParquetFile(infile)
-            data = pfile.read()
-            index = -1
-            for i in range(0, len(data) - 1):
-                entry = dict()
-                entry['fixme'] = data[0][i].as_py()
-                # entry['names']  = data[3][i].as_py()
-                # entry['level']  = data[4][i].as_py()
-                if data[5][i].as_py() is not None:
-                    entry['height'] = int(data[5][i].as_py())
-                else:
-                    entry['height'] = 0                    
-                if data[6][i].as_py() is not None:
-                    entry['levels'] = int(data[6][i].as_py())
-                else:
-                    entry['levels'] = 0
-                entry['source'] = data[8][i][0][0][1].as_py()
-                try:
-                    osm = data[8][i][0][2][1].as_py().split('@')
-                    if len(osm) > 1:
-                        entry['id'] = int(osm[0][1:])
-                        entry['version'] = int(osm[1])
-                    else:
-                        entry['id'] = int(osm[0])
-                except:
-                    entry['id'] = 0
-                entry['geometry'] = data[10][i].as_py()
-                entry['building'] = 'yes'     
-                geom = entry['geometry']
-                type = wkb.loads(entry['geometry']).geom_type
-                if type != 'Polygon':
-                    log.warning("Got Multipolygon")
-                    continue
-                # FIXME: This is a hack, for some weird reason the
-                # entry dict doesn't convert to jsonb, it just
-                # becomes bytes
-                tags = {'building': 'yes',
-                        'source': entry['source'],
-                        'levels': entry['levels'],
-                        'height': entry['height']
-                        }
-                scalar = select(cast(tags, JSONB))
-                sql = insert(ways).values(
-                    osm_id = entry['id'],
-                    geom = geom,
-                    tags = scalar,
-                )
-                # index -= 1
-                conn.execute(sql)
-                conn.commit()
-                print(f"FIXME2: {entry}")
-        except Exception as e:
-            log.error(e)
-
+        
 def main():
     """This main function lets this class be run standalone by a bash script"""
     parser = argparse.ArgumentParser(

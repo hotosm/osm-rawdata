@@ -218,7 +218,7 @@ class DatabaseAccess(object):
                     join_or[tables[table]].append(key)
                 if item['op'] == 'and':
                     join_and[tables[table]].append(key)
-                if item[key][0] == 'not null':
+                if 'not null' in item.get(key, []):
                     filters['tags'][tables[table]]['join_or'][key] = []
                     filters['tags'][tables[table]]['join_and'][key] = []
                 else:

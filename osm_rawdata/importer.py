@@ -31,8 +31,7 @@ from osm_fieldwork.make_data_extract import uriParser
 import pandas as pd
 import pyarrow.parquet as pq
 from shapely import wkb
-from sqlalchemy import create_engine, MetaData, text
-from sqlmodel import create_engine, Field, Session, SQLModel, select
+from sqlalchemy import create_engine, MetaData, text, select
 from osm_rawdata.db_models import Nodes, Ways, Lines, Base
 from osm_rawdata.db_schemas import WayBase
 from sqlalchemy.orm import sessionmaker, relationship

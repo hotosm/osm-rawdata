@@ -46,7 +46,7 @@ pythonpath = "osm_rawdata"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.1.2rc0"
+version = "0.1.2"
 version_files = [
     "pyproject.toml:version",
     "osm_rawdata/__version__.py",

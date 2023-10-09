@@ -1,3 +1,43 @@
+## 0.1.2 (2023-10-09)
+
+### Fix
+
+- config.py handle yaml with join\_ and without
+- checking for 'not null' in where items
+- Add missing double quote
+- Fix help line about program
+- Fix pedantic error
+- Oops, delete apidocs, since they are auto generated
+- Update docs
+- Use the same version of sqlalchemy for all other dependencies
+- make id column autoincrement, there is no OSM ID as we ignore the out of date OSM data, and the other data has a record field, which is put in tags
+- Add SRID to geometry
+- Add more dependencies
+- clip to boundary
+- Create the database and tables from scratch, modify importParquet to handle the changes
+- Parse the array for source to get the data source and ID
+- Use AGPLv3, not GPLv3
+- Add building=yes to we can query them
+- Ikport parquer files into postgres using the Underpass schema
+- Import parquet file into postgres using the underpass schema
+- Use the new db_models for the database
+- Add sqlalchemy model for our raw database schema
+- Rename models.py to db_models.py
+- Sigh... use sqlalchemy to create the Underpass schema for external datasets
+- Break big SQL dumop into tables
+- Add SQL schema for external data files
+- Add new program to import files from geofabrik into postgres
+- Remove more trailing spaces
+- Remove trailing spaces
+- Move file to directory so it gets installed
+- Add the custom Underpass database schema
+
+### Refactor
+
+- remove refs to sqlmodel (using sqlalchemy)
+- minor typos, renaming, docstrings
+- split parseYaml into separate methods for clarity
+
 ## 0.1.2rc0 (2023-09-11)
 
 ### Fix

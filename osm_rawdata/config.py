@@ -82,14 +82,14 @@ class QueryConfig(object):
         yaml_data = self.load_yaml(filespec)
         
         self._yaml_parse_tables(yaml_data)
-        self._yaml_parse_select_and_keep(yaml_data)
         self._yaml_parse_where(yaml_data)
+        self._yaml_parse_select_and_keep(yaml_data)
         self.config['keep'] = yaml_data.get('keep', [])
 
         return self.config
 
     @staticmethod
-    def load_yaml(self, filespec: str):
+    def load_yaml(filespec: str):
         """
         Private method to load YAML data from a file.
 
@@ -117,27 +117,6 @@ class QueryConfig(object):
         """
         self.config['tables'] = data.get('from', [])
 
-    def _yaml_parse_select_and_keep(self, data):
-        """
-        Private method to parse 'select' and 'keep' data.
-
-        Args:
-            data (dict): The YAML data.
-
-        Returns:
-            None
-        """
-        for table in self.config['tables']:
-            if data['select']:
-                for entry in data['select']:
-                    if isinstance(entry, dict):
-                        self.config['select'][table].append(entry)
-                    else:
-                        self.config['select'][table].append({entry: []})
-
-                for entry in data['keep']:
-                    self.config['select'][table].append({entry: []})
-
     def _yaml_parse_where(self, data):
         """
         Private method to parse 'where' data.
@@ -150,24 +129,58 @@ class QueryConfig(object):
         """
         for table in self.config['tables']:
             self.config['where'][table] = []
-            where_tags = data.get('where', {}).get('tags', [])
-            for tag in where_tags:
-                op = tag.get('op', None)
-                for key, values in tag.items():
-                    if key.startswith('join_'):
-                        op = key.split("_")[1]
-                    if key == 'op':
-                        continue
-                    for entry in values:
-                        for k1, v1 in entry.items():
-                            if v1 is True:
-                                v1 = 'yes'
-                            newtag = {k1: [v1], 'op': op}
-                            self.config['where'][table].append(newtag)
-                        for k2 in entry.keys():
-                            newtag = {k2: {}}
-                            newtag['op'] = op
-                            self.config['select'][table].append({k2: {}})
+            where_entries = data.get('where', {}).get('tags', [])
+
+            for entry in where_entries:
+                if entry == 'op':
+                    # Skip if already in correct {'op': 'or'} format
+                    # Necessary?
+                    continue
+
+                # If no join passed, default to join_or
+                if not any(key.startswith('join_') for key in entry.keys()):
+                    entry = {'join_or': [entry]}
+                
+                # Extract key / values
+                [[key, value]] = entry.items()
+
+                # Get the operation type after join_
+                op = key.split("_")[1]
+
+                for tags in value:
+                    for tag, selector in tags.items():
+                        if selector == True:
+                            # yes is required in osm tag query instead of true
+                            selector = 'yes'
+                        newtag = {tag: [selector], 'op': op}
+                        self.config['where'][table].append(newtag)
+
+    def _yaml_parse_select_and_keep(self, data):
+        """
+        Private method to parse 'select' and 'keep' data.
+
+        Args:
+            data (dict): The YAML data.
+
+        Returns:
+            None
+        """
+        for table in self.config['tables']:
+            # 'select' not tags specified, use 'where' tags instead
+            if data['select'] is None:
+                tags = [key for entry in self.config['where'][table] for key in entry.keys() if key != 'op']
+                self.config['select'][table] = [{tag: {}} for tag in tags]
+
+            # 'select' tags specified, process
+            else:
+                for tag in data['select']:
+                    if isinstance(tag, dict):
+                        self.config['select'][table].append(tag)
+                    else:
+                        self.config['select'][table].append({tag: []})
+
+                for tag in data['keep']:
+                    self.config['select'][table].append({tag: []})
 
     def parseJson(self,
                   filespec: str

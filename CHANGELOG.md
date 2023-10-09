@@ -1,3 +1,9 @@
+## 0.1.3 (2023-10-09)
+
+### Fix
+
+- add required psycopg2 dep prior to version bump
+
 ## 0.1.2 (2023-10-09)
 
 ### Fix

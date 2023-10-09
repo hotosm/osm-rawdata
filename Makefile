@@ -1,23 +1,23 @@
 # Copyright (c) 2020, 2021 Humanitarian OpenStreetMap Team
 #
-# This file is part of Osm-Fieldwork.
+# This file is part of Osm-RawData.
 #
-#     Osm-Fieldwork is free software: you can redistribute it and/or modify
+#     Osm-RawData is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 #
-#     Osm-Fieldwork is distributed in the hope that it will be useful,
+#     Osm-RawData is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
 #
 #     You should have received a copy of the GNU General Public License
-#     along with Osm-Fieldwork.  If not, see <https:#www.gnu.org/licenses/>.
+#     along with Osm-RawData.  If not, see <https:#www.gnu.org/licenses/>.
 #
 
-PACKAGE := org.osm_fieldwork.py
-NAME := osm-fieldwork
+PACKAGE := org.osm_rawdata.py
+NAME := osm-rawdata
 VERSION := 0.3.5
 
 # All python source files

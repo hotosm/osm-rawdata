@@ -19,20 +19,16 @@
 # 1100 13th Street NW Suite 800 Washington, D.C. 20005
 # <info@hotosm.org>
 
-from typing import List
-from typing import Optional
-from sqlalchemy import ForeignKey
-from sqlalchemy import String, BigInteger, SmallInteger, DateTime
-from sqlalchemy.orm import DeclarativeBase
 # from sqlalchemy.orm import Mapped
 # from sqlalchemy.orm import mapped_column
 # from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
+from sqlalchemy import BigInteger, DateTime, SmallInteger, String
+from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
-    """
-    The base class for the Underpass database schema
+    """The base class for the Underpass database schema.
 
     Attributes:
         uid (BigInteger): The ID of the user.
@@ -42,6 +38,7 @@ class Base(DeclarativeBase):
         timestamp (DateTime): The timestamp of the changeset
         tags (ARRAY(String, dimension=2)): The OSM tags
     """
+
     uid: Column(BigInteger)
     user: Column(String)
     version: Column(SmallInteger)
@@ -49,33 +46,35 @@ class Base(DeclarativeBase):
     timestamp: Column(DateTime)
     tags: Column(ARRAY(String, dimension=2))
 
+
 class Nodes(Base):
-    """
-    Class for a node
-    
+    """Class for a node.
+
     Attributes:
         geom (Geometry): The geometry of the node
     """
-    __tablenames__ = 'points'
-    geom = Column(Geometry('POINT'))
+
+    __tablenames__ = "points"
+    geom = Column(Geometry("POINT"))
+
 
 class Ways(Base):
-    """
-    Class for a polygon
-    
+    """Class for a polygon.
+
     Attributes:
         geom (Geometry): The geometry of the node
     """
-    __tablenames__ = 'polygons'
-    geom = Column(Geometry('POLYGON'))
+
+    __tablenames__ = "polygons"
+    geom = Column(Geometry("POLYGON"))
+
 
 class Lines(Base):
-    """
-    Class for a linestring
-    
+    """Class for a linestring.
+
     Attributes:
         geom (Geometry): The geometry of the node
     """
-    __tablenames__ = 'lines'
-    geom = Column(Geometry('LINESTRING'))
 
+    __tablenames__ = "lines"
+    geom = Column(Geometry("LINESTRING"))

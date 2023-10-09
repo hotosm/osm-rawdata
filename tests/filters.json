@@ -3,35 +3,17 @@
     "type": "Polygon",
     "coordinates": [
       [
-        [
-          83.585701,
-          28.046607
-        ],
-        [
-          83.585701,
-          28.382561
-        ],
-        [
-          84.391823,
-          28.382561
-        ],
-        [
-          84.391823,
-          28.046607
-        ],
-        [
-          83.585701,
-          28.046607
-        ]
+        [83.585701, 28.046607],
+        [83.585701, 28.382561],
+        [84.391823, 28.382561],
+        [84.391823, 28.046607],
+        [83.585701, 28.046607]
       ]
     ]
   },
   "fileName": "my export",
   "outputType": "geojson",
-  "geometryType": [
-    "point",
-    "polygon"
-  ],
+  "geometryType": ["point", "polygon"],
   "filters": {
     "tags": {
       "all_geometry": {
@@ -39,20 +21,12 @@
           "building": []
         },
         "join_and": {
-          "amenity": [
-            "cafe",
-            "restaurant",
-            "pub"
-          ]
+          "amenity": ["cafe", "restaurant", "pub"]
         }
       }
     },
     "attributes": {
-      "all_geometry": [
-        "name",
-        "addr"
-      ]
+      "all_geometry": ["name", "addr"]
     }
   }
 }
-

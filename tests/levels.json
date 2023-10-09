@@ -4,35 +4,16 @@
     "type": "Polygon",
     "coordinates": [
       [
-        [
-          83.585701,
-          28.046607
-        ],
-        [
-          83.585701,
-          28.382561
-        ],
-        [
-          84.391823,
-          28.382561
-        ],
-        [
-          84.391823,
-          28.046607
-        ],
-        [
-          83.585701,
-          28.046607
-        ]
+        [83.585701, 28.046607],
+        [83.585701, 28.382561],
+        [84.391823, 28.382561],
+        [84.391823, 28.046607],
+        [83.585701, 28.046607]
       ]
     ]
   },
   "outputType": "geojson",
-  "geometryType": [
-    "point",
-    "line",
-    "polygon"
-  ],
+  "geometryType": ["point", "line", "polygon"],
   "filters": {
     "tags": {
       "point": {
@@ -83,40 +64,16 @@
             "community_group_office",
             "government_office"
           ],
-          "man_made": [
-            "tower",
-            "water_tower",
-            "pumping_station"
-          ],
-          "tower:type": [
-            "communication"
-          ],
-          "aeroway": [
-            "aerodrome"
-          ],
-          "railway": [
-            "station"
-          ],
-          "emergency": [
-            "fire_hydrant"
-          ],
-          "landuse": [
-            "reservoir",
-            "recreation_gound"
-          ],
-          "waterway": [
-            "floodgate"
-          ],
-          "natural": [
-            "spring"
-          ],
-          "power": [
-            "tower",
-            "substation"
-          ],
-          "shop": [
-            "supermarket"
-          ],
+          "man_made": ["tower", "water_tower", "pumping_station"],
+          "tower:type": ["communication"],
+          "aeroway": ["aerodrome"],
+          "railway": ["station"],
+          "emergency": ["fire_hydrant"],
+          "landuse": ["reservoir", "recreation_gound"],
+          "waterway": ["floodgate"],
+          "natural": ["spring"],
+          "power": ["tower", "substation"],
+          "shop": ["supermarket"],
           "leisure": [
             "stadium ",
             " sports_centre ",
@@ -124,9 +81,7 @@
             " swimming_pool",
             "park"
           ],
-          "office": [
-            "government"
-          ]
+          "office": ["government"]
         }
       },
       "line": {
@@ -144,12 +99,8 @@
             " living_street ",
             " track"
           ],
-          "railway": [
-            "rail"
-          ],
-          "man_made": [
-            "embankment"
-          ],
+          "railway": ["rail"],
+          "man_made": ["embankment"],
           "waterway": []
         }
       },
@@ -202,35 +153,15 @@
             " community_group_office",
             "government_office"
           ],
-          "man_made": [
-            "tower",
-            "water_tower",
-            "pumping_station"
-          ],
-          "tower:type": [
-            "communication"
-          ],
-          "aeroway": [
-            "aerodrome"
-          ],
-          "railway": [
-            "station"
-          ],
-          "landuse": [
-            "reservoir",
-            "recreation_gound"
-          ],
+          "man_made": ["tower", "water_tower", "pumping_station"],
+          "tower:type": ["communication"],
+          "aeroway": ["aerodrome"],
+          "railway": ["station"],
+          "landuse": ["reservoir", "recreation_gound"],
           "waterway": [],
-          "natural": [
-            "spring"
-          ],
-          "power": [
-            "substation",
-            "plant"
-          ],
-          "shop": [
-            "supermarket"
-          ],
+          "natural": ["spring"],
+          "power": ["substation", "plant"],
+          "shop": ["supermarket"],
           "leisure": [
             "stadium ",
             " sports_centre ",
@@ -238,15 +169,9 @@
             " swimming_pool",
             "park"
           ],
-          "office": [
-            "government"
-          ],
-          "type": [
-            "boundary"
-          ],
-          "boundary": [
-            "administrative"
-          ]
+          "office": ["government"],
+          "type": ["boundary"],
+          "boundary": ["administrative"]
         }
       }
     },
@@ -270,12 +195,7 @@
         "addr:city",
         "source"
       ],
-      "line": [
-        "width",
-        "source",
-        "waterway",
-        "name"
-      ],
+      "line": ["width", "source", "waterway", "name"],
       "polygon": [
         "landslide_prone",
         "name",
@@ -294,4 +214,3 @@
     }
   }
 }
- 

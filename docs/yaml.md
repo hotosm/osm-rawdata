@@ -19,10 +19,10 @@ script for osm2pgsql.
 
 The tables are:
 
-* nodes
-* relations
-* ways_line
-* ways_poly
+- nodes
+- relations
+- ways_line
+- ways_poly
 
 ## where
 
@@ -33,7 +33,7 @@ with the results.
 
 The syntax is the same for the **join_or** keyword, or the
 **join_and** keyword. If you want to query for any value of the
-keyword, as *not_null*, which later gets turned into *IS NOT NULL* in
+keyword, as _not_null_, which later gets turned into _IS NOT NULL_ in
 SQL. It has a value associated with the keyword, then that is the only
 value searching for.
 
@@ -47,40 +47,38 @@ appear in the results.
 
 This config file is for building extracts.
 
-
-	select:
-	  - name: title
-	from:
-		- nodes
-		- ways_poly
-	where:
-	  tags:
-		- join_or:
-			- { building: yes, amenity: not null }
-		- join_and:
-			- { building:material: wood }
-	keep:
-		- building:levels
-		- building:material
-		- roof:material
-		- roof:shape
-		- roof:levels
-		- cusine
-		- convenience
-		- diesel
-		- version
+    select:
+      - name: title
+    from:
+     - nodes
+     - ways_poly
+    where:
+      tags:
+     - join_or:
+      - { building: yes, amenity: not null }
+     - join_and:
+      - { building:material: wood }
+    keep:
+     - building:levels
+     - building:material
+     - roof:material
+     - roof:shape
+     - roof:levels
+     - cusine
+     - convenience
+     - diesel
+     - version
 
 That then generates a list of SQL queries, one for each table in the
-database. Note that the table name has been changed to have *_view*
+database. Note that the table name has been changed to have _\_view_
 appended. This is because a view has been created from each table
 using the project boundary.
 
-
-	SELECT ST_AsText(geom), osm_id, version, tags->>'building:levels',
-		tags->>'building:material', tags->>'roof:material',
-		tags->>'roof:shape', tags->>'roof:levels', tags->>'cusine',
-		tags->>'convenience', tags->>'diesel', tags->>'version',
-		tags->>'building', tags->>'amenity',
-		tags->>'building:material' FROM ways_view WHERE (
-		tags->>'building'='yes' OR tags->>'amenity' IS NOT NULL)  AND
-		tags->>'building:material'='wood'
+    SELECT ST_AsText(geom), osm_id, version, tags->>'building:levels',
+     tags->>'building:material', tags->>'roof:material',
+     tags->>'roof:shape', tags->>'roof:levels', tags->>'cusine',
+     tags->>'convenience', tags->>'diesel', tags->>'version',
+     tags->>'building', tags->>'amenity',
+     tags->>'building:material' FROM ways_view WHERE (
+     tags->>'building'='yes' OR tags->>'amenity' IS NOT NULL)  AND
+     tags->>'building:material'='wood'

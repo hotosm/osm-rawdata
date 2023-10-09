@@ -21,41 +21,37 @@
 
 import argparse
 import logging
-import sys
 import subprocess
-import psycopg2
+import sys
 from sys import argv
-import requests
-import math
-from osm_fieldwork.make_data_extract import uriParser
-import pandas as pd
+
 import pyarrow.parquet as pq
-from shapely import wkb
-from sqlalchemy import create_engine, MetaData, text, select
-from osm_rawdata.db_models import Nodes, Ways, Lines, Base
-from osm_rawdata.db_schemas import WayBase
-from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy_utils import database_exists, create_database
-from sqlalchemy.dialects.postgresql import insert, HSTORE, JSONB
-from sqlalchemy import column, inspect, table, func, cast
 from codetiming import Timer
+from osm_fieldwork.make_data_extract import uriParser
 from progress.spinner import PixelSpinner
-from geoalchemy2 import Geometry
-import osm_rawdata.db_models
+from shapely import wkb
+from sqlalchemy import MetaData, cast, column, create_engine, select, table, text
+from sqlalchemy.dialects.postgresql import JSONB, insert
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy_utils import create_database, database_exists
 
 # Find the other files for this project
 import osm_rawdata as rw
+import osm_rawdata.db_models
+from osm_rawdata.db_models import Base
+
 rootdir = rw.__path__[0]
 
 # Instantiate logger
 log = logging.getLogger(__name__)
 
+
 class MapImporter(object):
-    def __init__(self,
-                 dburi: str,
-                 ):
-        """
-        This is a class to setup a local database for OSM data.
+    def __init__(
+        self,
+        dburi: str,
+    ):
+        """This is a class to setup a local database for OSM data.
 
         Args:
             dburi (str): The URI string for the database connection
@@ -73,68 +69,76 @@ class MapImporter(object):
             self.db = engine.connect()
 
             # Add the extension we need to process the data
-            sql = text("CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;CREATE EXTENSION IF NOT EXISTS dblink;")
+            sql = text(
+                "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;CREATE EXTENSION IF NOT EXISTS dblink;"
+            )
             self.db.execute(sql)
             self.db.commit()
 
             Base.metadata.create_all(bind=engine)
 
-            session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        
-            # Create indexes to improve peformance
-            #sql = text("cluster ways_poly using ways_poly_geom_idx;")
-            #self.db.execute(sql)
-            #sql("create index on ways_poly using gin(tags)")
-            #self.db.execute(sql)
-            #self.db.commit()
+            sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    def importOSM(self,
-               infile: str,
-               ):
-        """
-        Import an OSM data file into a postgres database.
+            # Create indexes to improve peformance
+            # sql = text("cluster ways_poly using ways_poly_geom_idx;")
+            # self.db.execute(sql)
+            # sql("create index on ways_poly using gin(tags)")
+            # self.db.execute(sql)
+            # self.db.commit()
+
+    def importOSM(
+        self,
+        infile: str,
+    ):
+        """Import an OSM data file into a postgres database.
 
         Args:
             infile (str): The file to import
 
         Returns:
             (bool): Whether the import finished sucessfully
-         """
+        """
         # osm2pgsql --create -d nigeria --extra-attributes --output=flex --style raw.lua nigeria-latest-internal.osm.pbf
-        result = subprocess.run(['osm2pgsql', '--create', '-d',
-                                 f"{self.uri['dbname']}",
-                                 '--extra-attributes',
-                                 '--output=flex',
-                                 '--style', f'{rootdir}/raw.lua',
-                                 f'{infile}']
-                                )
+        result = subprocess.run(
+            [
+                "osm2pgsql",
+                "--create",
+                "-d",
+                f"{self.uri['dbname']}",
+                "--extra-attributes",
+                "--output=flex",
+                "--style",
+                f"{rootdir}/raw.lua",
+                f"{infile}",
+            ]
+        )
         result.check_returncode()
 
-    def importParquet(self,
-               infile: str,
-               ):
-        """
-        Import an Overture parquet data file into a postgres database.
+    def importParquet(
+        self,
+        infile: str,
+    ):
+        """Import an Overture parquet data file into a postgres database.
 
         Args:
             infile (str): The file to import
 
         Returns:
             (bool): Whether the import finished sucessfully
-         """
-        #engine = create_engine(f"postgresql://{self.dburi}")
+        """
+        # engine = create_engine(f"postgresql://{self.dburi}")
         # engine = create_engine(f"postgresql://{self.dburi}", echo=True)
         # if not database_exists(engine.url):
         #     create_database(engine.url)
         # else:
         #     conn = engine.connect()
-            
+
         # session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        
+
         # meta = MetaData()
         # meta.create_all(engine)
 
-        spin = PixelSpinner(f'Processing {infile}...')
+        spin = PixelSpinner(f"Processing {infile}...")
         timer = Timer(text="importParquet() took {seconds:.0f}s")
         timer.start()
         try:
@@ -151,49 +155,50 @@ class MapImporter(object):
             for i in range(0, len(data) - 1):
                 spin.next()
                 entry = dict()
-                entry['fixme'] = data[0][i].as_py()
+                entry["fixme"] = data[0][i].as_py()
                 # entry['names']  = data[3][i].as_py()
                 # entry['level']  = data[4][i].as_py()
                 if data[5][i].as_py() is not None:
-                    entry['height'] = int(data[5][i].as_py())
+                    entry["height"] = int(data[5][i].as_py())
                 else:
-                    entry['height'] = 0                    
+                    entry["height"] = 0
                 if data[6][i].as_py() is not None:
-                    entry['levels'] = int(data[6][i].as_py())
+                    entry["levels"] = int(data[6][i].as_py())
                 else:
-                    entry['levels'] = 0
-                entry['source'] = data[8][i][0][0][1].as_py()
-                if entry['source'] == 'OpenStreetMap':
-                    #log.warning("Ignoring OpenStreetMap entries as they are out of date")
+                    entry["levels"] = 0
+                entry["source"] = data[8][i][0][0][1].as_py()
+                if entry["source"] == "OpenStreetMap":
+                    # log.warning("Ignoring OpenStreetMap entries as they are out of date")
                     # osm = data[8][i][0][2][1].as_py().split('@')
                     continue
-                entry['id'] = index
+                entry["id"] = index
                 # LIDAR has no record ID
                 try:
-                    entry['record'] = data[8][i][0][2][1].as_py()
+                    entry["record"] = data[8][i][0][2][1].as_py()
                 except:
-                    entry['record'] = 0
-                entry['geometry'] = data[10][i].as_py()
-                entry['building'] = 'yes'     
-                geom = entry['geometry']
-                type = wkb.loads(entry['geometry']).geom_type
-                if type != 'Polygon':
-                    #log.warning("Got Multipolygon")
+                    entry["record"] = 0
+                entry["geometry"] = data[10][i].as_py()
+                entry["building"] = "yes"
+                geom = entry["geometry"]
+                type = wkb.loads(entry["geometry"]).geom_type
+                if type != "Polygon":
+                    # log.warning("Got Multipolygon")
                     continue
                 # FIXME: This is a hack, for some weird reason the
                 # entry dict doesn't convert to jsonb, it just
                 # becomes bytes
-                tags = {'building': 'yes',
-                        'source': entry['source'],
-                        'levels': entry['levels'],
-                        'record': entry['record'],
-                        'height': entry['height']
-                        }
+                tags = {
+                    "building": "yes",
+                    "source": entry["source"],
+                    "levels": entry["levels"],
+                    "record": entry["record"],
+                    "height": entry["height"],
+                }
                 scalar = select(cast(tags, JSONB))
                 sql = insert(ways).values(
                     # osm_id = entry['osm_id'],
-                    geom = geom,
-                    tags = scalar,
+                    geom=geom,
+                    tags=scalar,
                 )
                 index -= 1
                 self.db.execute(sql)
@@ -203,38 +208,39 @@ class MapImporter(object):
             log.error(e)
         timer.stop()
 
-    def importGeoJson(self,
-               infile: str,
-               ):
-        """
-        Import a GeoJson data file into a postgres database.
+    def importGeoJson(
+        self,
+        infile: str,
+    ):
+        """Import a GeoJson data file into a postgres database.
 
         Args:
             infile (str): The file to import
 
         Returns:
             (bool): Whether the import finished sucessfully
-         """
+        """
         engine = create_engine(f"postgresql://{self.dburi}", echo=True)
         if not database_exists(engine.url):
             create_database(engine.url)
         else:
-            conn = engine.connect()
-            
-        session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        
+            engine.connect()
+
+        sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
         meta = MetaData()
         meta.create_all(engine)
-        
+
+
 def main():
-    """This main function lets this class be run standalone by a bash script"""
+    """This main function lets this class be run standalone by a bash script."""
     parser = argparse.ArgumentParser(
         prog="config",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Import data into a postgres database",
         epilog="""
         This should only be run standalone for debugging purposes.
-        """
+        """,
     )
     parser.add_argument("-v", "--verbose", nargs="?", const="0", help="verbose output")
     parser.add_argument("-i", "--infile", required=True, help="Input data file")
@@ -250,16 +256,15 @@ def main():
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
         ch.setFormatter(formatter)
         log.addHandler(ch)
 
     mi = MapImporter(args.uri)
-    #if mi.importOSM(args.infile):
+    # if mi.importOSM(args.infile):
     if mi.importParquet(args.infile):
-        log.info(f'Imported {args.infile} into {args.uri}')
+        log.info(f"Imported {args.infile} into {args.uri}")
+
 
 if __name__ == "__main__":
     """This is just a hook so this file can be run standalone during development."""

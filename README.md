@@ -13,7 +13,7 @@ backend for the HOT Export Tool.
 
 Since multiple projects need to do data extracts from OpenStreetMap in
 a flexible way, this was designed to have a single body of code to
-maintain. 
+maintain.
 
 ## Installation
 
@@ -24,7 +24,6 @@ To install osm-rawdata, you can use pip. Here are two options:
 
 - Latest on PyPi:
   `pip install osm-rawdata`
-
 
 ## Using the Container Image
 
@@ -51,12 +50,12 @@ This project is heavily dependant on postgres and postgis. This schema
 was optimized for data anaylsis more than display purposes. The
 traditional schema use for OSM shows how it has evolved over the
 years. Some tags are columns (usually empty), and others get put into
-an **hstore** *tag* column where they have to be accessed
+an **hstore** _tag_ column where they have to be accessed
 directly. One big change in this datbase schema is all the tags are in
 a single column, reducing the data size considerably, while also being
 easier to query in a consistent manner. In the past a developer had to
-keep track of what was a column, and what was in the *tags* column,
-which was inefficient. 
+keep track of what was a column, and what was in the _tags_ column,
+which was inefficient.
 
 This schema has 4 tables, similar to the traditional ones. OSM data is
 imported using [osm2pgsql](https://osm2pgsql.org/) but uses a
@@ -97,4 +96,3 @@ database query.
 
 This class handles working with the postgres database. It sets up the
 connections, and handles processing the results from the queries.
-

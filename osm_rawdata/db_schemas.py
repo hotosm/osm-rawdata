@@ -19,12 +19,10 @@
 # 1100 13th Street NW Suite 800 Washington, D.C. 20005
 # <info@hotosm.org>
 
-from typing import Optional
-from pydantic import BaseModel
 from datetime import datetime
-from sqlalchemy.ext.declarative import declarative_base
-from osm_rawdata.db_models import Base
-from geoalchemy2 import Geometry
+
+from pydantic import BaseModel
+
 
 class WayBase(BaseModel):
     id: int
@@ -35,4 +33,3 @@ class WayBase(BaseModel):
     timestamp: datetime
     # geom: Geometry('Polygon')
     tags: dict[str, str]
-

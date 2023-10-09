@@ -20,41 +20,42 @@
 # <info@hotosm.org>
 
 import argparse
-import logging
-import sys
-import os
 import json
-from sys import argv
-from geojson import Feature, FeatureCollection, dump, Polygon
-import geojson
-import requests
+import logging
+import os
+import sys
 import time
-import psycopg2
-from shapely.geometry import shape, Polygon
-from pathlib import Path
-from osm_rawdata.config import QueryConfig
-from shapely import wkt
-from io import BytesIO
 import zipfile
+from io import BytesIO
+from pathlib import Path
+from sys import argv
 
+import geojson
+import psycopg2
+import requests
+from geojson import Feature, FeatureCollection, Polygon
+from shapely import wkt
+from shapely.geometry import Polygon, shape
 
 # Find the other files for this project
 import osm_rawdata as rw
+from osm_rawdata.config import QueryConfig
+
 rootdir = rw.__path__[0]
 
 # Instantiate logger
 log = logging.getLogger(__name__)
 
+
 def uriParser(source):
-    """
-    Parse a URI into it's components
+    """Parse a URI into it's components.
 
     Args:
         source (str): The URI string for the database connection
 
     Returns:
         dict: The URI split into components
-    
+
     """
     dbhost = None
     dbname = None
@@ -66,17 +67,17 @@ def uriParser(source):
     # connect to that hostname's tcp/ip port. If dbhost
     # is None, the datbase connection is done locally
     # through the named pipe.
-    colon = source.find(':')
-    rcolon = source.rfind(':')
-    atsign = source.find('@')
-    slash = source.find('/')
+    colon = source.find(":")
+    rcolon = source.rfind(":")
+    atsign = source.find("@")
+    slash = source.find("/")
     # If nothing but a string, then it's a local postgres database
     # that doesn't require a user or password to login.
     if colon < 0 and atsign < 0 and slash < 0:
         dbname = source
     # Get the database name, which is always after the slash
     if slash > 0:
-        dbname = source[slash+1:]
+        dbname = source[slash + 1 :]
     # The user field is either between the beginning of the string,
     # and either a colon or atsign as the end.
     if colon > 0:
@@ -85,63 +86,64 @@ def uriParser(source):
         dbuser = source[:atsign]
     # The password field is between a colon and the atsign
     if colon > 0 and atsign > 0:
-        dbpass = source[colon+1:atsign]
+        dbpass = source[colon + 1 : atsign]
     # The hostname for the database is after an atsign, and ends
     # either with the end of the string or a slash.
     if atsign > 0:
         if rcolon > 0 and rcolon > atsign:
-            dbhost = source[atsign+1:rcolon]
+            dbhost = source[atsign + 1 : rcolon]
         elif slash > 0:
-            dbhost = source[atsign+1:slash]
+            dbhost = source[atsign + 1 : slash]
         else:
-            dbhost = source[atsign+1:]
+            dbhost = source[atsign + 1 :]
     # rcolon is only above zero if there is a port number
     if rcolon > 0 and rcolon > atsign:
         if slash > 0:
-            dbport = source[rcolon+1:slash]
+            dbport = source[rcolon + 1 : slash]
         else:
-            dbport = source[rcolon+1:]
+            dbport = source[rcolon + 1 :]
             # import epdb; epdb.st()
     if colon > 0 and atsign < 0 and slash > 0:
-        dbpass = source[colon+1:slash]
+        dbpass = source[colon + 1 : slash]
 
     if not dbhost:
-        dbhost = 'localhost'
+        dbhost = "localhost"
 
         # print(f"{source}\n\tcolon={colon} rcolon={rcolon} atsign={atsign} slash={slash}")
-    return {'dbname': dbname, 'dbhost': dbhost, 'dbuser': dbuser, 'dbpass': dbpass, 'dbport': dbport}
+    return {"dbname": dbname, "dbhost": dbhost, "dbuser": dbuser, "dbpass": dbpass, "dbport": dbport}
+
 
 class DatabaseAccess(object):
-    def __init__(self,
-                 dburi: str,
-                 ):
-        """
-        This is a class to setup a database connection
-        
+    def __init__(
+        self,
+        dburi: str,
+    ):
+        """This is a class to setup a database connection.
+
         Args:
             dburi (str): The URI string for the database connection
         """
         self.dbshell = None
         self.dbcursor = None
         self.uri = uriParser(dburi)
-        if self.uri['dbname'] == "underpass":
+        if self.uri["dbname"] == "underpass":
             # Authentication data
             # self.auth = HTTPBasicAuth(self.user, self.passwd)
 
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            self.url = os.getenv('UNDERPASS_API_URL', 'https://raw-data-api0.hotosm.org/v1')
+            self.url = os.getenv("UNDERPASS_API_URL", "https://raw-data-api0.hotosm.org/v1")
             self.headers = {"accept": "application/json", "Content-Type": "application/json"}
         else:
             log.info(f"Opening database connection to: {self.uri['dbname']}")
-            connect = "PG: dbname=" + self.uri['dbname']
-            if 'dbname' in self.uri and self.uri['dbname'] is not None:
+            connect = "PG: dbname=" + self.uri["dbname"]
+            if "dbname" in self.uri and self.uri["dbname"] is not None:
                 connect = f"dbname={self.uri['dbname']}"
-            elif 'dbhost'in self.uri and self.uri['dbhost'] == "localhost" and self.uri['dbhost'] is not None:
+            elif "dbhost" in self.uri and self.uri["dbhost"] == "localhost" and self.uri["dbhost"] is not None:
                 connect = f"host={self.uri['dbhost']} dbname={self.uri['dbname']}"
-            if 'dbuser' in self.uri and self.uri['dbuser'] is not None:
+            if "dbuser" in self.uri and self.uri["dbuser"] is not None:
                 connect += f" user={self.uri['dbuser']}"
-            if 'dbpass' in self.uri and self.uri['dbpass'] is not None:
+            if "dbpass" in self.uri and self.uri["dbpass"] is not None:
                 connect += f" password={self.uri['dbpass']}"
             log.debug(f"Connecting with: {connect}")
             try:
@@ -153,20 +155,20 @@ class DatabaseAccess(object):
             except Exception as e:
                 log.error(f"Couldn't connect to database: {e}")
 
-    def createJson(self,
-                   config: QueryConfig,
-                   boundary: Polygon,
-                   allgeom: bool = False,
-                   ):
-        """
-        This class generates a JSON file, which is used for remote access
+    def createJson(
+        self,
+        config: QueryConfig,
+        boundary: Polygon,
+        allgeom: bool = False,
+    ):
+        """This class generates a JSON file, which is used for remote access
         to an OSM raw database using the Underpass schema.
 
         Args:
             config (QueryConfig): The config data from the query config file
             boundary (Polygon): The boundary polygon
             allgeom (bool): Whether to return centroids or all the full geometry
-                
+
         Returns:
             (FeatureCollection): the json data
         """
@@ -179,160 +181,162 @@ class DatabaseAccess(object):
 
         # This only effects the output file
         geometrytype = list()
-        #for table in config.config['tables']:
-        if len(config.config['select']['nodes']) > 0 or len(config.config['where']['nodes']) > 0:
-            geometrytype.append('point')
-        if len(config.config['select']['ways_line']) > 0 or len(config.config['where']['ways_line']) > 0:
-            geometrytype.append('line')
-        if len(config.config['select']['ways_poly']) > 0 or len(config.config['where']['ways_poly']) > 0:
-            geometrytype.append('polygon')
-        feature['geometryType'] = geometrytype
+        # for table in config.config['tables']:
+        if len(config.config["select"]["nodes"]) > 0 or len(config.config["where"]["nodes"]) > 0:
+            geometrytype.append("point")
+        if len(config.config["select"]["ways_line"]) > 0 or len(config.config["where"]["ways_line"]) > 0:
+            geometrytype.append("line")
+        if len(config.config["select"]["ways_poly"]) > 0 or len(config.config["where"]["ways_poly"]) > 0:
+            geometrytype.append("polygon")
+        feature["geometryType"] = geometrytype
 
-        tables = {'nodes': 'point',
-                  'ways_poly': 'polygon',
-                  'ways_line': 'line'
-                  }
+        tables = {"nodes": "point", "ways_poly": "polygon", "ways_line": "line"}
         # The database tables to query
         # if tags exists, then only query those fields
-        join_or = {'point': [],
-                   'polygon': [],
-                   'line': [],
-                   }
-        join_and = {'point': [],
-                   'polygon': [],
-                   'line': [],
-                   }
-        filters['tags'] = {'point': {'join_or': {}, 'join_and': {}},
-                           'polygon': {'join_or': {}, 'join_and': {}},
-                           'line': {'join_or': {}, 'join_and': {}}}
-        for table in config.config['where'].keys():
-            for item in config.config['where'][table]:
+        join_or = {
+            "point": [],
+            "polygon": [],
+            "line": [],
+        }
+        join_and = {
+            "point": [],
+            "polygon": [],
+            "line": [],
+        }
+        filters["tags"] = {
+            "point": {"join_or": {}, "join_and": {}},
+            "polygon": {"join_or": {}, "join_and": {}},
+            "line": {"join_or": {}, "join_and": {}},
+        }
+        for table in config.config["where"].keys():
+            for item in config.config["where"][table]:
                 key = list(item.keys())[0]
-                if item['op'] == 'or':
+                if item["op"] == "or":
                     join_or[tables[table]].append(key)
-                if item['op'] == 'and':
+                if item["op"] == "and":
                     join_and[tables[table]].append(key)
-                if 'not null' in item.get(key, []):
-                    filters['tags'][tables[table]]['join_or'][key] = []
-                    filters['tags'][tables[table]]['join_and'][key] = []
+                if "not null" in item.get(key, []):
+                    filters["tags"][tables[table]]["join_or"][key] = []
+                    filters["tags"][tables[table]]["join_and"][key] = []
                 else:
-                    filters['tags'][tables[table]]['join_or'][key] = item[key]
-                    filters['tags'][tables[table]]['join_and'][key] = item[key]
+                    filters["tags"][tables[table]]["join_or"][key] = item[key]
+                    filters["tags"][tables[table]]["join_and"][key] = item[key]
         feature.update({"filters": filters})
 
         attributes = list()
-        for table, data in config.config['select'].items():
+        for table, data in config.config["select"].items():
             for value in data:
                 [[k, v]] = value.items()
                 if k not in attributes:
                     attributes.append(k)
 
         # Whether to dump centroids or polygons
-        if 'centroid' in config.config:
-            feature['centroid'] = true
+        if "centroid" in config.config:
+            feature["centroid"] = true
         return json.dumps(feature)
 
-    def createSQL(self,
-                  config: QueryConfig,
-                  allgeom: bool = True,
-                  ):
-        """
-        This class generates the SQL to query a local postgres database.
+    def createSQL(
+        self,
+        config: QueryConfig,
+        allgeom: bool = True,
+    ):
+        """This class generates the SQL to query a local postgres database.
 
         Args:
             config (QueryConfig): The config data from the query config file
             allgeom (bool): Whether to return centroids or all the full geometry
-                
+
         Returns:
             (FeatureCollection): the json
         """
         sql = list()
         query = ""
-        for table in config.config['tables']:
+        for table in config.config["tables"]:
             select = "SELECT "
             if allgeom:
                 select += "ST_AsText(geom)"
             else:
                 select += "ST_AsText(ST_Centroid(geom))"
             select += ", osm_id, version, "
-            for entry in config.config['select'][table]:
+            for entry in config.config["select"][table]:
                 if type(entry) == str:
-                    import epdb; epdb.st()
+                    import epdb
+
+                    epdb.st()
                 for k1, v1 in entry.items():
-                    select += f"tags->>\'{k1}\', "
+                    select += f"tags->>'{k1}', "
             select = select[:-2]
 
-            previous = ""
             join_or = list()
             join_and = list()
-            for entry in config.config['where'][table]:
+            for entry in config.config["where"][table]:
                 # print(entry)
-                if 'op' not in entry:
+                if "op" not in entry:
                     pass
-                op = entry['op']
+                op = entry["op"]
                 for k, v in entry.items():
-                    if k == 'op':
+                    if k == "op":
                         continue
-                    if op == 'or':
+                    if op == "or":
                         # print(f"1: {k}=\'{v}\' OR ")
                         join_or.append(entry)
-                    elif op == 'and':
+                    elif op == "and":
                         # print(f"2: {k}=\'{v}\' AND ")
                         join_and.append(entry)
             # jor = '('
-            jor = ''
+            jor = ""
             for entry in join_or:
                 for k, v in entry.items():
-                    if k == 'op':
+                    if k == "op":
                         continue
                     if len(v) == 1:
-                        if v[0] == 'not null':
-                            v1 = f"IS NOT NULL"
+                        if v[0] == "not null":
+                            v1 = "IS NOT NULL"
                         else:
-                            v1 = f"=\'{v[0]}\'"
+                            v1 = f"='{v[0]}'"
                     elif len(v) > 0:
                         v1 = f" IN {str(tuple(v))}"
                     else:
-                        v1 =  'IS NOT NULL'
-                    jor += f"tags->>\'{k}\' {v1} OR "
-            #print(f"JOR: {jor}")
+                        v1 = "IS NOT NULL"
+                    jor += f"tags->>'{k}' {v1} OR "
+            # print(f"JOR: {jor}")
 
-            jand = ''
+            jand = ""
             for entry in join_and:
                 for k, v in entry.items():
-                    if k == 'op':
+                    if k == "op":
                         continue
                     if len(v) == 1:
-                        if v[0] == 'not null':
-                            v1 = f"IS NOT NULL"
+                        if v[0] == "not null":
+                            v1 = "IS NOT NULL"
                         else:
-                            v1 = f"=\'{v[0]}\'"
+                            v1 = f"='{v[0]}'"
                     elif len(v) > 0:
                         v1 = f" IN {str(tuple(v))}"
                     else:
-                        v1 = 'IS NOT NULL AND'
-                    jand += f"tags->>\'{k}\' {v1} AND "
-            #print(f"JAND: {jand}")
+                        v1 = "IS NOT NULL AND"
+                    jand += f"tags->>'{k}' {v1} AND "
+            # print(f"JAND: {jand}")
             query = f"{select} FROM {table} WHERE {jor} {jand}".rstrip()
-            #if query[len(query)-5:] == ' OR  ':
+            # if query[len(query)-5:] == ' OR  ':
             # print(query[:query.rfind(' ')])
-            sql.append(query[:query.rfind(' ')])
+            sql.append(query[: query.rfind(" ")])
 
         return sql
 
-    def queryLocal(self,
-                   query: str,
-                   allgeom: bool = True,
-                   boundary: Polygon = None,
-                   ):
-        """
-        This query a local postgres database.
+    def queryLocal(
+        self,
+        query: str,
+        allgeom: bool = True,
+        boundary: Polygon = None,
+    ):
+        """This query a local postgres database.
 
         Args:
             query (str): The SQL query to execute
             allgeom (bool): Whether to return centroids or all the full geometry
             boundary (Polygon): The boundary polygon
-                
+
         Returns:
                 query (FeatureCollection): the results of the query
         """
@@ -367,14 +371,14 @@ class DatabaseAccess(object):
             geom = wkt.loads(item[0])
             tags = dict()
             tags["id"] = item[1]
-            tags['version'] = item[2]
+            tags["version"] = item[2]
             i = 3
             # If there are no tables, we're using a custom SQL query
-            if len(self.qc.config['tables']) > 0:
+            if len(self.qc.config["tables"]) > 0:
                 # map the value in the select to the values returns for them.
-                for table, values in self.qc.config['select'].items():
+                for _table, values in self.qc.config["select"].items():
                     for entry in values:
-                        if i== len(item):
+                        if i == len(item):
                             break
                         [[k, v]] = entry.items()
                         if item[i] is not None:
@@ -382,8 +386,8 @@ class DatabaseAccess(object):
                         i += 1
             else:
                 # Figure out the tags from the custom SELECT
-                end = query.find('FROM')
-                res = query[:end].split(' ')
+                end = query.find("FROM")
+                res = query[:end].split(" ")
                 # This should be the geometry
                 geom = wkt.loads(item[0])
                 # This should be the OSM ID
@@ -392,14 +396,13 @@ class DatabaseAccess(object):
                 tags[res[3][:-1]] = item[2]
             features.append(Feature(geometry=geom, properties=tags))
         return FeatureCollection(features)
-        #return features
+        # return features
 
-
-    def queryRemote(self,
-                    query: str = None,
-                    ):
-        """
-        This queries a remote postgres database using the FastAPI
+    def queryRemote(
+        self,
+        query: str = None,
+    ):
+        """This queries a remote postgres database using the FastAPI
         backend to the HOT Export Tool.
 
         Args:
@@ -413,16 +416,16 @@ class DatabaseAccess(object):
         if result.status_code != 200:
             log.error(f"{result.json()['detail'][0]['msg']}")
             return None
-        task_id = result.json()['task_id']
+        task_id = result.json()["task_id"]
         newurl = f"{self.url}/tasks/status/{task_id}"
         while True:
             result = self.session.get(newurl, headers=self.headers)
-            if result.json()['status'] == "PENDING":
+            if result.json()["status"] == "PENDING":
                 log.debug("Retrying...")
                 time.sleep(1)
-            elif result.json()['status'] == "SUCCESS":
+            elif result.json()["status"] == "SUCCESS":
                 break
-        zip = result.json()['result']['download_url']
+        zip = result.json()["result"]["download_url"]
         result = self.session.get(zip, headers=self.headers)
         fp = BytesIO(result.content)
         zfp = zipfile.ZipFile(fp, "r")
@@ -431,17 +434,20 @@ class DatabaseAccess(object):
         data = zfp.read("Export.geojson")
         os.remove("/tmp/Export.geojson")
         return json.loads(data)
+
     #   return zfp.read("Export.geojson")
 
+
 class PostgresClient(DatabaseAccess):
-    """Class to handle SQL queries for the categories"""
-    def __init__(self,
-                 uri: str,
-                 config: str = None,
-                 #output: str = None
+    """Class to handle SQL queries for the categories."""
+
+    def __init__(
+        self,
+        uri: str,
+        config: str = None,
+        # output: str = None
     ):
-        """
-        This is a client for a postgres database.
+        """This is a client for a postgres database.
 
         Args:
             uri (str): The URI string for the database connection
@@ -455,20 +461,16 @@ class PostgresClient(DatabaseAccess):
         if config:
             # Load the config file for the SQL query
             path = Path(config)
-            result = None
-            if path.suffix == '.json':
-                result = self.qc.parseJson(config)
-            elif path.suffix == '.yaml':
-                result = self.qc.parseYaml(config)
+            if path.suffix == ".json":
+                self.qc.parseJson(config)
+            elif path.suffix == ".yaml":
+                self.qc.parseYaml(config)
             else:
                 log.error(f"{path} is an unsupported file format!")
                 quit()
 
-    def createDB(self,
-                 dburi: uriParser
-                 ):
-        """
-        Setup the postgres database connection.
+    def createDB(self, dburi: uriParser):
+        """Setup the postgres database connection.
 
         Args:
             dburi (str): The URI string for the database connection
@@ -480,7 +482,7 @@ class PostgresClient(DatabaseAccess):
         self.dbcursor.execute(sql)
         result = self.dbcursor.fetchall()
         log.info("Query returned %d records" % len(result))
-        #result = subprocess.call("createdb", uri.dbname)
+        # result = subprocess.call("createdb", uri.dbname)
 
         # Add the extensions needed
         sql = "CREATE EXTENSION postgis; CREATE EXTENSION hstore;"
@@ -489,28 +491,28 @@ class PostgresClient(DatabaseAccess):
         log.info("Query returned %d records" % len(result))
         return True
 
-    def execQuery(self,
-                    boundary: FeatureCollection,
-                    customsql: str = None,
-                    allgeom: bool = True,
-                    ):
-        """
-        This class generates executes the query using a local postgres
+    def execQuery(
+        self,
+        boundary: FeatureCollection,
+        customsql: str = None,
+        allgeom: bool = True,
+    ):
+        """This class generates executes the query using a local postgres
         database, or a remote one that uses the Underpass schema.
 
         Args:
             boundary (FeatureCollection): The boundary polygon
             customsql (str): Don't create the SQL, use the one supplied
             allgeom (bool): Whether to return centroids or all the full geometry
-                
+
         Returns:
                 query (FeatureCollection): the json
         """
         log.info("Extracting features from Postgres...")
 
-        if 'features' in boundary:
+        if "features" in boundary:
             # FIXME: ideally this should support multipolygons
-            poly = boundary['features'][0]['geometry']
+            poly = boundary["features"][0]["geometry"]
         else:
             poly = boundary["geometry"]
         wkt = shape(poly)
@@ -525,15 +527,16 @@ class PostgresClient(DatabaseAccess):
                 # print(query)
                 result = self.queryLocal(query, allgeom, wkt)
                 if len(result) > 0:
-                    alldata += result['features']
+                    alldata += result["features"]
             collection = FeatureCollection(alldata)
         else:
             request = self.createJson(self.qc, poly, allgeom)
             collection = self.queryRemote(request)
         return collection
 
+
 def main():
-    """This main function lets this class be run standalone by a bash script"""    
+    """This main function lets this class be run standalone by a bash script."""
     parser = argparse.ArgumentParser(
         prog="postgres",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -543,7 +546,7 @@ This program extracts data from a local postgres data, or the remote Underpass
 one. A boundary polygon is used to define the are to be covered in the extract.
 Optionally a data file can be used.
 
-        """
+        """,
     )
     parser.add_argument("-v", "--verbose", nargs="?", const="0", help="verbose output")
     parser.add_argument("-u", "--uri", default="underpass", help="Database URI")
@@ -551,8 +554,7 @@ Optionally a data file can be used.
     parser.add_argument("-s", "--sql", help="Custom SQL query to execute against the database")
     parser.add_argument("-a", "--all", help="All the geometry or just centroids")
     parser.add_argument("-c", "--config", help="The config file for the query (json or yaml)")
-    parser.add_argument("-o", "--outfile", default='extract.geojson',
-                        help="The output file")
+    parser.add_argument("-o", "--outfile", default="extract.geojson", help="The output file")
     args = parser.parse_args()
 
     if len(argv) <= 1 or (args.sql is None and args.config is None):
@@ -564,19 +566,17 @@ Optionally a data file can be used.
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
         ch.setFormatter(formatter)
         log.addHandler(ch)
 
-    infile = open(args.boundary, 'r')
+    infile = open(args.boundary, "r")
     poly = geojson.load(infile)
     if args.uri is not None:
         log.info("Using a Postgres database for the data source")
         if args.sql:
             pg = PostgresClient(args.uri)
-            sql = open(args.sql, 'r')
+            sql = open(args.sql, "r")
             result = pg.execQuery(poly, sql.read())
             log.info(f"Custom Query returned {len(result['features'])} records")
         else:
@@ -584,10 +584,11 @@ Optionally a data file can be used.
             result = pg.execQuery(poly)
             log.info(f"Canned Query returned {len(result['features'])} records")
 
-        outfile = open(args.outfile, 'w')
+        outfile = open(args.outfile, "w")
         geojson.dump(result, outfile)
 
         log.debug(f"Wrote {args.outfile}")
+
 
 if __name__ == "__main__":
     """This is just a hook so this file can be run standlone during development."""

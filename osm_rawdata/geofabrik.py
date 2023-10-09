@@ -20,19 +20,21 @@
 # <info@hotosm.org>
 
 import argparse
-import os
 import logging
 import sys
-import yaml
 from sys import argv
+
+import yaml
 from pySmartDL import SmartDL
 
 # Find the other files for this project
 import osm_rawdata as rw
+
 rootdir = rw.__path__[0]
 
 # Instantiate logger
 log = logging.getLogger(__name__)
+
 
 class GeoFabrik(object):
     def __init__(self):
@@ -48,23 +50,22 @@ class GeoFabrik(object):
 
     def dump(self):
         for entry in self.regions:
-            [[k,v]] = entry.items()
+            [[k, v]] = entry.items()
             print(f"Region: {k}")
             if type(v) == list:
                 for i in v:
                     print(f"\t{i}")
             print("")
 
-    def getRegion(self,
-                  region: str
-                  ):
+    def getRegion(self, region: str):
         for entry in self.regions:
-            [[k,v]] = entry.items()
+            [[k, v]] = entry.items()
             if type(v) == list:
                 for i in v:
                     if i == region:
                         return k
         return None
+
 
 def main():
     # Command Line options
@@ -83,14 +84,12 @@ def main():
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
         ch.setFormatter(formatter)
         log.addHandler(ch)
 
     geof = GeoFabrik()
-    if args.list: 
+    if args.list:
         geof.dump()
         quit()
 
@@ -108,6 +107,7 @@ def main():
             dl.start()
         except:
             logging.error(f"Couldn't download from {outfile}: {dl.get_errors()}")
+
 
 if __name__ == "__main__":
     main()

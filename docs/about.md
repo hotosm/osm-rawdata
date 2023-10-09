@@ -31,11 +31,11 @@ This project is heavily dependant on postgres and postgis. This schema
 was optimized for data anaylsis more than display purposes. The
 traditional schema use for OSM shows how it has evolved over the
 years. Some tags are columns (usually empty), and others get put into
-an **jsonb** *tag* column where they have to be accessed
+an **jsonb** _tag_ column where they have to be accessed
 directly. One big change in this datbase schema is all the tags are in
 a single column, reducing the data size considerably, while also being
 easier to query in a consistent manner. In the past a developer had to
-keep track of what was a column, and what was in the *tags* column,
+keep track of what was a column, and what was in the _tags_ column,
 which was inefficient.
 
 This schema has 4 tables, similar to the traditional ones. OSM data is
@@ -60,4 +60,3 @@ enhanced version to define the queries.
 
 The JSON format is also supported, both parsing the config file and
 also generating that query from a YAML config file.
-

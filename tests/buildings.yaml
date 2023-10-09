@@ -1,7 +1,7 @@
 select:
 from:
-    - nodes
-    - ways_poly
+  - nodes
+  - ways_poly
 where:
   tags:
     - join_or:
@@ -9,12 +9,12 @@ where:
     - join_and:
         - { building:material: wood, roof:material: metal }
 keep:
-    - building:levels
-    - building:material
-    - roof:material
-    - roof:shape
-    - roof:levels
-    - cusine
-    - convenience
-    - diesel
-    - version
+  - building:levels
+  - building:material
+  - roof:material
+  - roof:shape
+  - roof:levels
+  - cusine
+  - convenience
+  - diesel
+  - version

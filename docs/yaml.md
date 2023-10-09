@@ -27,13 +27,13 @@ The tables are:
 ## where
 
 The where section is a bit more complicated because we need to support
-a mix of OR and AND arguments. The is a limit to how complicated this
+a mix of OR and AND arguments. There is a limit to how complicated this
 can get, but sometimes it's easier to just do a little manual cleanup
 with the results.
 
 The syntax is the same for the **join_or** keyword, or the
 **join_and** keyword. If you want to query for any value of the
-keyword, ass *not_null*, which later gets turned into *IS NOT NULL* in
+keyword, as *not_null*, which later gets turned into *IS NOT NULL* in
 SQL. It has a value associated with the keyword, then that is the only
 value searching for.
 

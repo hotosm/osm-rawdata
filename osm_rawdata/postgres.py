@@ -53,7 +53,7 @@ def uriParser(source):
         source (str): The URI string for the database connection
 
     Returns:
-        db (dict): The URI split into components
+        dict: The URI split into components
     
     """
     dbhost = None
@@ -109,9 +109,7 @@ def uriParser(source):
         dbhost = 'localhost'
 
         # print(f"{source}\n\tcolon={colon} rcolon={rcolon} atsign={atsign} slash={slash}")
-    db = {'dbname': dbname, 'dbhost': dbhost, 'dbuser': dbuser, 'dbpass': dbpass, 'dbport': dbport}
-
-    return db
+    return {'dbname': dbname, 'dbhost': dbhost, 'dbuser': dbuser, 'dbpass': dbpass, 'dbport': dbport}
 
 class DatabaseAccess(object):
     def __init__(self,
@@ -132,11 +130,7 @@ class DatabaseAccess(object):
 
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            db = os.getenv('UNDERPASS_API_URL')
-            if db:
-                self.url = db
-            else:
-                self.url = "https://raw-data-api0.hotosm.org/v1"
+            self.url = os.getenv('UNDERPASS_API_URL', 'https://raw-data-api0.hotosm.org/v1')
             self.headers = {"accept": "application/json", "Content-Type": "application/json"}
         else:
             log.info(f"Opening database connection to: {self.uri['dbname']}")

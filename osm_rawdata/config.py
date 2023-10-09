@@ -49,77 +49,125 @@ class QueryConfig(object):
         into data structure.
         
         Args:
-                boundary (Polygon): The project boundary
+            boundary (Polygon): The project boundary.
         """
-        self.config = {'select': dict(),
-                       'tables': list(),
-                       'where': dict(),
-                       'keep': list(),
-                       }
-        self.config['select'] = {'nodes': [],
-                                 'ways_poly': [],
-                                 'ways_line': [],
-                                 }
-        self.config['where'] = {'nodes': [],
-                                'ways_poly': [],
-                                'ways_line': [],
-                                }
+        self.config = {
+            'select': {
+                'nodes': [],
+                'ways_poly': [],
+                'ways_line': [],
+            },
+            'tables': [],
+            'where': {
+                'nodes': [],
+                'ways_poly': [],
+                'ways_line': [],
+            },
+            'keep': [],
+        }
         self.geometry = boundary
         # for polygon extracts, sometimes we just want the center point
         self.centroid = False
 
-    def parseYaml(self,
-                    filespec: str
-                    ):
+    def parseYaml(self, filespec: str):
         """
-        This method parses the YAML config file format into our internal
-        data structure.
+        Parse the YAML config file format into the internal data structure.
 
         Args:
-                filespec (str): the file to read
+            filespec (str): The file to read.
 
         Returns:
-                config (dict): the config data
+            config (dict): The config data.
         """
-        file = open(filespec, 'r')
-        path = Path(filespec)
-        data = yaml.load(file, Loader=yaml.Loader)
+        yaml_data = self.load_yaml(filespec)
+        
+        self._yaml_parse_tables(yaml_data)
+        self._yaml_parse_select_and_keep(yaml_data)
+        self._yaml_parse_where(yaml_data)
+        self.config['keep'] = yaml_data.get('keep', [])
 
-        self.config['tables'] = data['from']
+        return self.config
+
+    @staticmethod
+    def load_yaml(self, filespec: str):
+        """
+        Private method to load YAML data from a file.
+
+        Args:
+            filespec (str): The file to read.
+
+        Returns:
+            data (dict): The loaded YAML data.
+        """
+        with open(filespec, 'r') as file:
+            return yaml.safe_load(file)
+
+    def _yaml_parse_tables(self, data):
+        """
+        Private method to parse 'from' data.
+
+        The table names are based on the Underpass schema:
+        nodes, ways_poly, ways_line, relations.
+
+        Args:
+            data (dict): The YAML data.
+
+        Returns:
+            None
+        """
+        self.config['tables'] = data.get('from', [])
+
+    def _yaml_parse_select_and_keep(self, data):
+        """
+        Private method to parse 'select' and 'keep' data.
+
+        Args:
+            data (dict): The YAML data.
+
+        Returns:
+            None
+        """
         for table in self.config['tables']:
             if data['select']:
                 for entry in data['select']:
-                    if type(entry) == dict:
+                    if isinstance(entry, dict):
                         self.config['select'][table].append(entry)
                     else:
-                        self.config['select'][table].append({entry: list()})
+                        self.config['select'][table].append({entry: []})
 
                 for entry in data['keep']:
-                    self.config['select'][table].append({entry: list()})
+                    self.config['select'][table].append({entry: []})
 
-                op = None
-            for tag in data['where']['tags']:
-                [[k, v]] = tag.items()
-                if k[:4] == 'join':
-                    op = k[5:]
-                if tag == 'op':
-                    continue
-                for entry in v:
-                    for k1, v1 in entry.items():
-                        if v1 == True:
-                            v1 = 'yes'
-                        newtag = {k1: [v1]}
-                        newtag['op'] = op
-                        self.config['where'][table].append(newtag)
-                for k2, v2 in entry.items():
-                    newtag = {k2: dict()}
-                    newtag['op'] = op
-                    self.config['select'][table].append({k2: dict()})
+    def _yaml_parse_where(self, data):
+        """
+        Private method to parse 'where' data.
 
-        self.config['keep'] = data['keep']
-        # The table names are based on the Underpass schema, nodes, ways_poly,
-        # ways_line, relations
-        return self.config
+        Args:
+            data (dict): The YAML data.
+
+        Returns:
+            None
+        """
+        for table in self.config['tables']:
+            self.config['where'][table] = []
+            where_tags = data.get('where', {}).get('tags', [])
+            for tag in where_tags:
+                op = tag.get('op', None)
+                for key, values in tag.items():
+                    if key.startswith('join_'):
+                        op = key.split("_")[1]
+                    if key == 'op':
+                        continue
+                    for entry in values:
+                        for k1, v1 in entry.items():
+                            if v1 is True:
+                                v1 = 'yes'
+                            newtag = {k1: [v1], 'op': op}
+                            self.config['where'][table].append(newtag)
+                        for k2 in entry.keys():
+                            newtag = {k2: {}}
+                            newtag['op'] = op
+                            self.config['select'][table].append({k2: {}})
 
     def parseJson(self,
                   filespec: str
@@ -129,10 +177,10 @@ class QueryConfig(object):
         and export tool.
 
         Args:
-                filespec (str): the file to read
+            filespec (str): the file to read
 
         Returns:
-                config (dict): the config data
+            config (dict): the config data
         """
 
         file = open(filespec, 'r')

@@ -1,0 +1,21 @@
+select:
+from:
+  - nodes
+  - ways_poly
+where:
+  tags:
+    - building: yes
+      amenity: not null
+    - join_and:
+        - building:material: wood
+          roof:material: metal
+keep:
+  - building:levels
+  - building:material
+  - roof:material
+  - roof:shape
+  - roof:levels
+  - cusine
+  - convenience
+  - diesel
+  - version

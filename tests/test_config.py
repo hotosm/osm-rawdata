@@ -81,6 +81,27 @@ def test_formats():
     assert qc.config["outputType"] == "shp" and qc.config["fileName"] == "Pokhara_all_features"
 
 
+def test_yaml_no_joins():
+    qc = QueryConfig()
+    qc.parseYaml(f"{rootdir}/buildings_no_join.yaml")
+
+    selected = qc.config["select"]
+    assert len(selected.keys()) == 3
+    assert len(list(selected.values())[0]) == 4
+
+    where = qc.config["where"]
+    assert len(where.keys()) == 3
+
+    nodes = list(where.values())[0]
+    assert len(nodes) == 4
+
+    building = nodes[0]["building"]
+    assert building == ["yes"]
+
+    op = nodes[0]["op"]
+    assert op == "or"
+
+
 def test_everything():
     # this query contains only the geometry, we want everything within this polygon
     qc = QueryConfig()
@@ -98,4 +119,6 @@ if __name__ == "__main__":
     test_levels()
     print("--- test_filters ---")
     test_filters()
+    print("--- test_yaml_no_joins ---")
+    test_yaml_no_joins()
     print("--- done() ---")

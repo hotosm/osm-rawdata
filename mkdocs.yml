@@ -60,8 +60,11 @@ nav:
   - About: about.md
   - Utilities:
       - Importer: importer.md
+      - Postgres: postgres.md
+      - Geofabrik: geofabrik.md
   - File Formats:
       - JSON: json.md
       - YAML: yaml.md
+      - Overture: overture.md
   - API: api.md
   - License: LICENSE.md

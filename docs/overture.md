@@ -18,6 +18,20 @@ time. Each file has features spread across the planet, instead of a
 subset in a geographical region. If you wish to get all the data for a
 region, you have to load all 120 files into a database.
 
+While the Overture recommends using [Amazon
+Athena](https://aws.amazon.com/athena/) or [Microsoft
+Synapse](https://learn.microsoft.com/en-us/azure/synapse-analytics/get-started-create-workspace),
+you can also use a database.
+
+Thee two primary databases are [DuckDB](https://duckdb.org/), and
+[Postgres](https://www.postgresql.org/about/news/parquet-s3-fdw-021-released-2379/),
+both of which have Parquet support. You can now also use [ogr2ogr](https://gdal.org/drivers/vector/parquet.html) to
+import a parquet file into postgres. In these cases the database
+schema will resemble the Overture schema. Since HOT maintains it's own
+database schema that is also optimized for query performance, you can
+use the [importer](https://hotosm.github.io/osm-rawdata/importer/)
+program to import into the Underpass schema.
+
 ## Schema
 
 The schema used in the Overture data files is [documented here](
@@ -65,7 +79,7 @@ a language value as well.
 * common
 * official
 * alternate
-* ahort
+* short
 
 ## sources
 

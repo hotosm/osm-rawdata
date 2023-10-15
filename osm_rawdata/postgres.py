@@ -352,22 +352,31 @@ class DatabaseAccess(object):
             sql = f"DROP VIEW IF EXISTS relations_view;CREATE TEMP VIEW relations_view AS SELECT * FROM nodes WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
             self.dbcursor.execute(sql)
 
-        if query.find(" ways_poly ") > 0:
-            query = query.replace("ways_poly", "ways_view")
-        if query.find(" ways_line ") > 0:
-            query = query.replace("ways_line", "lines_view")
-        elif query.find(" nodes ") > 0:
-            query = query.replace("nodes", "nodes_view")
-        elif query.find(" relations ") > 0:
-            query = query.replace("relations", "relations_view")
-        features = list()
-        # log.debug(query)
+            if query.find(" ways_poly ") > 0:
+                query = query.replace("ways_poly", "ways_view")
+            elif query.find(" ways_line ") > 0:
+                query = query.replace("ways_line", "lines_view")
+            elif query.find(" nodes ") > 0:
+                query = query.replace("nodes", "nodes_view")
+            elif query.find(" relations ") > 0:
+                query = query.replace("relations", "relations_view")
+
+        log.debug(query)
         self.dbcursor.execute(query)
-        result = self.dbcursor.fetchall()
-        log.info("SQL Query returned %d records" % len(result))
+        try:
+            result = self.dbcursor.fetchall()
+            log.debug("SQL Query returned %d records" % len(result))
+        except:
+            return FeatureCollection(features)
+
+        # If there is no config file, don't modify the results
+        if len(self.qc.config['where']['ways_poly']) == 0 and len(self.qc.config['where']['nodes']) == 0:
+            return result
+
         for item in result:
-            if len(item) <= 1:
-                break
+            if len(item) <= 1 and len(result) == 1:
+                return result
+                # break
             geom = wkt.loads(item[0])
             tags = dict()
             tags["id"] = item[1]

@@ -27,7 +27,7 @@ from sys import argv
 
 import pyarrow.parquet as pq
 from codetiming import Timer
-from osm_fieldwork.make_data_extract import uriParser
+from osm_rawdata.postgres import uriParser
 from progress.spinner import PixelSpinner
 from shapely import wkb
 from sqlalchemy import MetaData, cast, column, create_engine, select, table, text
@@ -73,7 +73,7 @@ class MapImporter(object):
                 "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;CREATE EXTENSION IF NOT EXISTS dblink;"
             )
             self.db.execute(sql)
-            self.db.commit()
+            #self.db.commit()
 
             Base.metadata.create_all(bind=engine)
 
@@ -261,8 +261,8 @@ def main():
         log.addHandler(ch)
 
     mi = MapImporter(args.uri)
-    # if mi.importOSM(args.infile):
-    if mi.importParquet(args.infile):
+    if mi.importOSM(args.infile):
+        #if mi.importParquet(args.infile):
         log.info(f"Imported {args.infile} into {args.uri}")
 
 

@@ -69,7 +69,7 @@ def importThread(
         data (list): The list of tiles to download
         db
     """
-    log.debug(f"In importThread()")
+    # log.debug(f"In importThread()")
     #timer = Timer(text="importThread() took {seconds:.0f}s")
     #timer.start()
     ways = table(
@@ -89,9 +89,9 @@ def importThread(
         )
 
     index = 0
-    log.debug(f"DATA:{index} {len(data)}")
+
     for feature in data:
-        log.debug(feature)
+        # log.debug(feature)
         index -= 1
         entry = dict()
         tags = feature['properties']
@@ -304,6 +304,9 @@ class MapImporter(object):
         index = 0
         connections = list()
 
+        timer = Timer(text="importGeoJson() took {seconds:.0f}s")
+        timer.start()
+
         for thread in range(0, cores + 1):
             engine = create_engine(f"postgresql://{self.dburi}", echo=False)
             if not database_exists(engine.url):
@@ -321,6 +324,7 @@ class MapImporter(object):
 
         if entries <= chunk:
             result = importThread(data['features'], connections[0])
+            timer.stop()
             return True
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=cores) as executor:
@@ -331,6 +335,8 @@ class MapImporter(object):
                 block += chunk
                 index += 1
             executor.shutdown()
+        timer.stop()
+
         return True
 
 def main():

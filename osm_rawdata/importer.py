@@ -118,7 +118,7 @@ def importThread(
         db.execute(sql)
         # db.commit()
 
-def parquatThread(
+def parquetThread(
     data: list,
     db: Connection,
     ):
@@ -325,7 +325,7 @@ class MapImporter(object):
         chunk = round(entries / cores)
 
         if entries <= chunk:
-            resut = parquatThread(data, connections[0])
+            resut = parquetThread(data, connections[0])
             timer.stop()
             return True
 
@@ -334,7 +334,7 @@ class MapImporter(object):
             block = 0
             while block <= entries:
                 log.debug("Dispatching Block %d:%d" % (block, block + chunk))
-                result = executor.submit(parquatThread, data[block : block + chunk], connections[index])
+                result = executor.submit(parquetThread, data[block : block + chunk], connections[index])
                 block += chunk
                 index += 1
             executor.shutdown()

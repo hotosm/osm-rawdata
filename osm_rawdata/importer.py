@@ -340,8 +340,6 @@ class MapImporter(object):
             executor.shutdown()
         timer.stop()
 
-        timer.stop()
-
     def importGeoJson(
         self,
         infile: str,

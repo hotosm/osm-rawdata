@@ -74,3 +74,4 @@ nav:
       - Overture: overture.md
   - API: api.md
   - License: LICENSE
+  - Changelog: CHANGELOG.md

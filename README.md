@@ -1,6 +1,48 @@
-# osm-rawdata
+# OSM RawData
 
-🕮 [Documentation](https://hotosm.github.io/osm-rawdata/)
+<!-- markdownlint-disable -->
+<p align="center">
+  <img src="https://github.com/hotosm/fmtm/blob/main/images/hot_logo.png?raw=true" style="width: 200px;" alt="HOT"></a>
+</p>
+<p align="center">
+  <em>A python module for accessing OSM data in a postgres database.</em>
+</p>
+<p align="center">
+  <a href="https://github.com/hotosm/osm-rawdata/actions/workflows/build.yml" target="_blank">
+      <img src="https://github.com/hotosm/osm-rawdata/workflows/Build/badge.svg" alt="Build">
+  </a>
+  <a href="https://github.com/hotosm/osm-rawdata/actions/workflows/build-ci.yml" target="_blank">
+      <img src="https://github.com/hotosm/osm-rawdata/workflows/Build CI Img/badge.svg" alt="CI Build">
+  </a>
+  <a href="https://github.com/hotosm/osm-rawdata/actions/workflows/docs.yml" target="_blank">
+      <img src="https://github.com/hotosm/osm-rawdata/workflows/Publish Docs/badge.svg" alt="Publish Docs">
+  </a>
+  <a href="https://github.com/hotosm/osm-rawdata/actions/workflows/publish.yml" target="_blank">
+      <img src="https://github.com/hotosm/osm-rawdata/workflows/Publish to PyPi.org/badge.svg" alt="Publish">
+  </a>
+  <a href="https://github.com/hotosm/osm-rawdata/actions/workflows/pytest.yml" target="_blank">
+      <img src="https://github.com/hotosm/osm-rawdata/workflows/PyTest/badge.svg" alt="Test">
+  </a>
+  <a href="https://pypi.org/project/osm-rawdata" target="_blank">
+      <img src="https://img.shields.io/pypi/v/osm-rawdata?color=%2334D058&label=pypi%20package" alt="Package version">
+  </a>
+  <a href="https://pypistats.org/packages/osm-rawdata" target="_blank">
+      <img src="https://img.shields.io/pypi/dm/osm-rawdata.svg" alt="Downloads">
+  </a>
+  <a href="https://github.com/hotosm/osm-rawdata/blob/main/LICENSE" target="_blank">
+      <img src="https://img.shields.io/github/license/hotosm/osm-rawdata.svg" alt="License">
+  </a>
+</p>
+
+---
+
+🕮 **Documentation**: <a href="https://hotosm.github.io/osm-rawdata/" target="_blank">https://hotosm.github.io/osm-rawdata/</a>
+
+🖥️ **Source Code**: <a href="https://github.com/hotosm/osm-rawdata" target="_blank">https://github.com/hotosm/osm-rawdata</a>
+
+---
+
+<!-- markdownlint-enable -->
 
 These is a module to work with
 [OpenStreetMap](https://www.openstreetmap.org) data using postgres and
@@ -80,19 +122,19 @@ enhanced version to define the queries.
 The JSON format is also supported, both parsing the config file and
 also generating that query from a YAML config file.
 
-# The files
+## The Files
 
-## geofabrik.py
+### geofabrik.py
 
 This is a simple utility to download a file from GeoGFabrik.
 
-## config.py
+### config.py
 
 This class parses either then JSON or YAML config file formatted
 files, and creates a data structure used later to generater the
 database query.
 
-## postgres.py
+### postgres.py
 
 This class handles working with the postgres database. It sets up the
 connections, and handles processing the results from the queries.

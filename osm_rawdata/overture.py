@@ -35,7 +35,7 @@ from progress.spinner import PixelSpinner
 from codetiming import Timer
 
 # Instantiate logger
-log = logging.getLogger(__name__)
+log = logging.getLogger('osm-rawdata')
 
 class Overture(object):
     def __init__(self,
@@ -52,27 +52,9 @@ class Overture(object):
         self.filespec = filespec
         log.debug(f"Read {len(self.data)} entries from {filespec}")
 
-    # def parsePlace(self,
-    #                data: Series,
-    #                 ):
-    #     entry = dict()
-    #     log.debug(data)
-
-    # def parseHighway(self,
-    #                data: Series,
-    #                 ):
-    #     entry = dict()
-    #     log.debug(data)
-
-    # def parseLocality(self,
-    #                data: Series,
-    #                 ):
-    #     entry = dict()
-    #     log.debug(data)
-
     def parse(self,
-                    data: Series,
-                    ):
+                data: Series,
+                  ):
         # log.debug(data)
         entry = dict()
         # timer = Timer(text="importParquet() took {seconds:.0f}s")
@@ -85,9 +67,33 @@ class Overture(object):
             if key == 'geometry':
                 geom = wkb.loads(value)
             if type(value) == ndarray:
-                # the sources column is the only list
                 # print(f"LIST: {key} = {value}")
-                entry['source'] = value[0]['dataset']
+                if type(value[0]) == dict:
+                    for k1, v1 in value[0].items():
+                        if v1 is not None:
+                            if type(v1) == ndarray:
+                                import epdb; epdb.st()
+                            entry[k1] = v1
+                else:
+                    # FIXME: for now the data only has one entry in the array,
+                    # but this could change.
+                    if type(value[0]) == ndarray:
+                        import epdb; epdb.st()
+                    entry[key] = value[0]
+                continue
+            if key == 'sources' and type(value) == list:
+                if type(value) == ndarray:
+                    import epdb; epdb.st()
+                if type(value[0]) == ndarray:
+                    import epdb; epdb.st()
+                if 'dataset' in value[0]:
+                    entry['source'] = value[0]['dataset']
+                if 'recordId' in valve[0] and ['recordId'] is not None:
+                    entry['record'] = value[0]['recordId']
+                if value[0]['confidence'] is not None:
+                    entry['confidence'] = value[0]['confidence']
+                else:
+                    entry['source'] = value['dataset']
                 if value[0]['recordId'] is not None:
                     entry['record'] = value[0]['recordId']
                 if value[0]['confidence'] is not None:
@@ -95,20 +101,23 @@ class Overture(object):
             if type(value) == dict:
                 if key == 'bbox':
                     continue
-                # print(f"DICT: {key} = {value}")
-                # the names column is the only dictionary we care about
                 for k1, v1 in value.items():
-                    if type(v1) == ndarray and len(v1) == 0:
+                    if v1 is None:
+                        continue
+                    if type(v1) == dict:
+                        # print(f"DICT: {key} = {value}")
+                        for k2, v2 in v1.items():
+                            if v2 is None:
+                                continue
+                            if type(v2) == ndarray:
+                                for k3,v3 in v2.tolist()[0].items():
+                                    if v3 is not None:
+                                        entry[k3] = v3
+                            elif type(v2) == str:
+                                entry[k2] = v2
                         continue
                     # FIXME: we should use the language to adjust the name tag
-                    lang = v1[0]['language']
-                    if k1 == 'common':
-                        entry['loc_name'] = v1[0]['value']
-                    if k1 == 'official':
-                        entry['name'] = v1[0]['value']
-                    if k1 == 'alternate':
-                        entry['alt_name'] = v1[0]['value']
-                    # print(f"ROW: {k1} = {v1}")
+                    # lang = v1[0]['language']
         #timer.stop()
         return Feature(geometry=geom, properties=entry)
 
@@ -126,7 +135,6 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("-i", "--infile", required=True, help="Input file")
     parser.add_argument("-o", "--outfile", default='overture.geojson', help="Output file")
-    parser.add_argument("-c", "--category", choices=categories, required=True, help="Data category")
 
     args = parser.parse_args()
 
@@ -150,21 +158,19 @@ def main():
     for index in overture.data.index:
         spin.next()
         feature = overture.data.loc[index]
-        if args.category == 'buildings':
-            entry = overture.parse(feature)
-        # elif args.category == 'places':
-        #     entry = overture.parsePlace(feature)
-        # elif args.category == 'highway':
-        #     entry = overture.parseHighway(feature)
-        # elif args.category == 'locality':
-        #     entry = overture.parseLocality(feature)
-        features.append(entry)
+        entry = overture.parse(feature)
+        if entry['properties']['dataset'] != 'OpenStreetMap':
+            features.append(entry)
 
-    file = open(args.outfile, 'w')
-    geojson.dump(FeatureCollection(features), file)
-    timer.stop()
+    if len(features) > 0:
+        file = open(args.outfile, 'w')
+        geojson.dump(FeatureCollection(features), file)
+        timer.stop()
+        log.info(f"Wrote {args.outfile}")
+    else:
+        log.info(f"There was no non OSM data in {args.infile}")
 
-    log.info(f"Wrote {args.outfile}")
+    spin.finish()
 
 if __name__ == "__main__":
     """This is just a hook so this file can be run standlone during development."""

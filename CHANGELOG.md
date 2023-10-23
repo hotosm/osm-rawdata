@@ -1,3 +1,24 @@
+## 0.1.4 (2023-10-23)
+
+### Fix
+
+- Parser for Overture data files V2
+- Add importer script
+- Fix spelling of parquet
+- Remove extraneous timer.stop()
+- Make importing parquet files from Overture multi-threaded
+- Add timer for import GeoJson
+- Import MS Footprints into underpass schema
+- Import uriParse from rawdata instead of the local copy
+- If no config file is used, return the raw results
+- Add content on importing Overture data into a database
+- Add simple pages for all the utilities, add doc on the Overture data files
+
+### Refactor
+
+- rename LICENSE.md --> LICENSE
+- update version in Makefile & track
+
 ## 0.1.3 (2023-10-09)
 
 ### Fix

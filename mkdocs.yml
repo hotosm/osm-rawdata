@@ -73,4 +73,5 @@ nav:
       - YAML: yaml.md
       - Overture: overture.md
   - API: api.md
-  - License: LICENSE.md
+  - License: LICENSE
+  - Changelog: CHANGELOG.md

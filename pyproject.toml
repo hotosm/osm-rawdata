@@ -105,5 +105,5 @@ convention = "google"
 
 [project.scripts]
 # osm-rawdata = "osm_rawdata.cmd:main"
-# hot-import = "osm_rawdata.postgres:main"
+importer = "osm_rawdata.importer:main"
 geofabrik = "osm_rawdata.geofabrik:main"

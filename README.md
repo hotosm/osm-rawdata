@@ -36,7 +36,7 @@
 
 ---
 
-🕮 **Documentation**: <a href="https://hotosm.github.io/osm-rawdata/" target="_blank">https://hotosm.github.io/osm-rawdata/</a>
+📖 **Documentation**: <a href="https://hotosm.github.io/osm-rawdata/" target="_blank">https://hotosm.github.io/osm-rawdata/</a>
 
 🖥️ **Source Code**: <a href="https://github.com/hotosm/osm-rawdata" target="_blank">https://github.com/hotosm/osm-rawdata</a>
 

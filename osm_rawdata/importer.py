@@ -32,6 +32,7 @@ from pathlib import Path
 from cpuinfo import get_cpu_info
 from shapely.geometry import shape
 
+from pandas import DataFrame
 import pyarrow.parquet as pq
 from codetiming import Timer
 from osm_rawdata.postgres import uriParser
@@ -49,11 +50,12 @@ from shapely import wkt, wkb
 import osm_rawdata as rw
 import osm_rawdata.db_models
 from osm_rawdata.db_models import Base
+from osm_rawdata.overture import Overture
 
 rootdir = rw.__path__[0]
 
 # Instantiate logger
-log = logging.getLogger(__name__)
+log = logging.getLogger('osm-rawdata')
 
 # The number of threads is based on the CPU cores
 info = get_cpu_info()
@@ -82,6 +84,14 @@ def importThread(
 
     nodes = table(
         "nodes",
+        column("id"),
+        column("user"),
+        column("geom"),
+        column("tags"),
+        )
+
+    nodes = table(
+        "ways_line",
         column("id"),
         column("user"),
         column("geom"),
@@ -119,7 +129,7 @@ def importThread(
         # db.commit()
 
 def parquetThread(
-    data: list,
+    data: DataFrame,
     db: Connection,
     ):
     """Thread to handle importing
@@ -146,56 +156,48 @@ def parquetThread(
         column("tags"),
         )
 
+    lines = table(
+        "ways_line",
+        column("id"),
+        column("user"),
+        column("geom"),
+        column("tags"),
+        )
+
     index = -1
     log.debug(f"There are {len(data)} entries in the data")
-    for i in range(0, len(data)):
-        # spin.next()
-        entry = dict()
-        entry["fixme"] = data[0][i].as_py()
-        # entry['names']  = data[3][i].as_py()
-        # entry['level']  = data[4][i].as_py()
-        if data[5][i].as_py() is not None:
-            entry["height"] = int(data[5][i].as_py())
+
+    overture = Overture()
+    for index in data.index:
+        feature = data.loc[index]
+        tags = overture.parse(feature)
+        # geom = wkb.loads(feature['geometry'])
+        geom = feature['geometry']
+        geom_type = wkb.loads(geom).geom_type
+        scalar = select(cast(tags['properties'], JSONB))
+        sql = None
+        if geom_type == 'Polygon':
+            sql = insert(ways).values(
+                # osm_id = entry['osm_id'],
+                geom=geom,
+                tags=scalar,
+            )
+        elif geom_type == 'Point':
+            sql = insert(nodes).values(
+                # osm_id = entry['osm_id'],
+                geom=geom,
+                tags=scalar,
+            )
+        elif geom_type == 'LineString':
+            sql = insert(lines).values(
+                # osm_id = entry['osm_id'],
+                geom=geom,
+                tags=scalar,
+            )
         else:
-            entry["height"] = 0
-        if data[6][i].as_py() is not None:
-            entry["levels"] = int(data[6][i].as_py())
-        else:
-            entry["levels"] = 0
-        entry["source"] = data[8][i][0][0][1].as_py()
-        if entry["source"] == "OpenStreetMap" or entry["source"] == "Microsoft ML Buildings":
-            # log.warning("Ignoring OpenStreetMap or MS Building entries as they are out of date")
-            # osm = data[8][i][0][2][1].as_py().split('@')
+            log.error(f"geometry type {geom_type} is unsupported!")
             continue
-        entry["id"] = index
-        # LIDAR has no record ID
-        try:
-            entry["record"] = data[8][i][0][2][1].as_py()
-        except:
-            entry["record"] = 0
-        entry["geometry"] = data[10][i].as_py()
-        entry["building"] = "yes"
-        geom = entry["geometry"]
-        type = wkb.loads(entry["geometry"]).geom_type
-        if type != "Polygon":
-            # log.warning("Got Multipolygon")
-            continue
-        # FIXME: This is a hack, for some weird reason the
-        # entry dict doesn't convert to jsonb, it just
-        # becomes bytes
-        tags = {
-            "building": "yes",
-            "source": entry["source"],
-            "levels": entry["levels"],
-            "record": entry["record"],
-            "height": entry["height"],
-        }
-        scalar = select(cast(tags, JSONB))
-        sql = insert(ways).values(
-            # osm_id = entry['osm_id'],
-            geom=geom,
-            tags=scalar,
-        )
+
         index -= 1
         db.execute(sql)
         # db.commit()
@@ -217,23 +219,34 @@ class MapImporter(object):
         """
         self.dburi = dburi
         self.db = None
-        if dburi:
-            self.uri = uriParser(dburi)
-            engine = create_engine(f"postgresql://{self.dburi}", echo=True)
+        self.connections = list()
+        for thread in range(0, cores + 1):
+            engine = create_engine(f"postgresql://{self.dburi}", echo=False)
             if not database_exists(engine.url):
                 create_database(engine.url)
-            self.db = engine.connect()
+            self.connections.append(engine.connect())
+            sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+            if thread == 0:
+                meta = MetaData()
+                meta.create_all(engine)
+
+        # if dburi:
+            # self.uri = uriParser(dburi)
+            # engine = create_engine(f"postgresql://{self.dburi}", echo=True)
+            # if not database_exists(engine.url):
+            #     create_database(engine.url)
+            # self.db = engine.connect()
 
             # Add the extension we need to process the data
-            sql = text(
-                "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;CREATE EXTENSION IF NOT EXISTS dblink;"
-            )
-            self.db.execute(sql)
-            #self.db.commit()
+                sql = text(
+                    "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;CREATE EXTENSION IF NOT EXISTS dblink;"
+                )
+                self.connections[0].execute(sql)
 
-            Base.metadata.create_all(bind=engine)
+                Base.metadata.create_all(bind=engine)
 
-            sessionmaker(autocommit=False, autoflush=False, bind=engine)
+                sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
             # Create indexes to improve peformance
             # sql = text("cluster ways_poly using ways_poly_geom_idx;")
@@ -255,12 +268,13 @@ class MapImporter(object):
             (bool): Whether the import finished sucessfully
         """
         # osm2pgsql --create -d nigeria --extra-attributes --output=flex --style raw.lua nigeria-latest-internal.osm.pbf
+        uri = uriParser(self.dburi)
         result = subprocess.run(
             [
                 "osm2pgsql",
                 "--create",
                 "-d",
-                f"{self.uri['dbname']}",
+                f"{uri['dbname']}",
                 "--extra-attributes",
                 "--output=flex",
                 "--style",
@@ -294,18 +308,19 @@ class MapImporter(object):
         # meta = MetaData()
         # meta.create_all(engine)
 
-        spin = PixelSpinner(f"Processing {infile}...")
+        # spin = PixelSpinner(f"Processing {infile}...")
         timer = Timer(text="importParquet() took {seconds:.0f}s")
         timer.start()
-        ways = table(
-            "ways_poly",
-            column("id"),
-            column("user"),
-            column("geom"),
-            column("tags"),
-        )
-        pfile = pq.ParquetFile(infile)
-        data = pfile.read()
+        # ways = table(
+        #     "ways_poly",
+        #     column("id"),
+        #     column("user"),
+        #     column("geom"),
+        #     column("tags"),
+        # )
+        # pfile = pq.ParquetFile(infile)
+        # data = pfile.read()
+        overture = Overture(infile)
 
         connections = list()
         for thread in range(0, cores + 1):
@@ -320,12 +335,12 @@ class MapImporter(object):
                 meta.create_all(engine)
 
         # A chunk is a group of threads
-        entries = len(data)
+        entries = len(overture.data)
         log.debug(f"There are {entries} entries in {infile}")
         chunk = round(entries / cores)
 
-        if entries <= chunk:
-            resut = parquetThread(data, connections[0])
+        if True: # FIXME: should be entries <= chunk:
+            result = parquetThread(overture.data, connections[0])
             timer.stop()
             return True
 
@@ -334,7 +349,7 @@ class MapImporter(object):
             block = 0
             while block <= entries:
                 log.debug("Dispatching Block %d:%d" % (block, block + chunk))
-                result = executor.submit(parquetThread, data[block : block + chunk], connections[index])
+                result = executor.submit(parquetThread, overture.data[block : block + chunk], connections[index])
                 block += chunk
                 index += 1
             executor.shutdown()
@@ -367,23 +382,24 @@ class MapImporter(object):
         timer = Timer(text="importGeoJson() took {seconds:.0f}s")
         timer.start()
 
-        for thread in range(0, cores + 1):
-            engine = create_engine(f"postgresql://{self.dburi}", echo=False)
-            if not database_exists(engine.url):
-                create_database(engine.url)
-            connections.append(engine.connect())
-            sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        # for thread in range(0, cores + 1):
+        #     engine = create_engine(f"postgresql://{self.dburi}", echo=False)
+        #     if not database_exists(engine.url):
+        #         create_database(engine.url)
+        #     connections.append(engine.connect())
+        #     sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-            if thread == 0:
-                meta = MetaData()
-                meta.create_all(engine)
+        #     if thread == 0:
+        #         meta = MetaData()
+        #         meta.create_all(engine)
 
         # A chunk is a group of threads
         entries = len(data['features'])
         chunk = round(entries / cores)
 
+        # For small files we only need one thread
         if entries <= chunk:
-            result = importThread(data['features'], connections[0])
+            result = importThread(data['features'], self.connections[0])
             timer.stop()
             return True
 
@@ -391,7 +407,7 @@ class MapImporter(object):
             block = 0
             while block <= entries:
                 log.debug("Dispatching Block %d:%d" % (block, block + chunk))
-                result = executor.submit(importThread, data['features'][block : block + chunk], connections[index])
+                result = executor.submit(importThread, data['features'][block : block + chunk], self.connections[index])
                 block += chunk
                 index += 1
             executor.shutdown()
@@ -433,11 +449,15 @@ def main():
     path = Path(args.infile)
 
     # And populate it with data
-    if path.suffix == ".osm":
+    if path.suffix == ".osm" or path.suffix == ".pbf":
         mi.importOSM(args.infile)
     elif path.suffix == ".geojson":
         mi.importGeoJson(args.infile)
+    elif path.suffix == ".parquet":
+        # Newer data from Overture has a suffix
+        mi.importParquet(args.infile)
     else:
+        # Older data from Overture lacked the suffix
         mi.importParquet(args.infile)
     log.info(f"Imported {args.infile} into {args.uri}")
 

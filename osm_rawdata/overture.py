@@ -39,7 +39,7 @@ log = logging.getLogger('osm-rawdata')
 
 class Overture(object):
     def __init__(self,
-                 filespec: str,
+                 filespec: str = None,
         ):
         """A class for parsing Overture V2 files.
 
@@ -48,9 +48,10 @@ class Overture(object):
         """
         #pfile = pq.ParquetFile(filespec)
         # self.data = pfile.read()
-        self.data = pd.read_parquet(filespec)
+        if filespec:
+            self.data = pd.read_parquet(filespec)
+            log.debug(f"Read {len(self.data)} entries from {filespec}")
         self.filespec = filespec
-        log.debug(f"Read {len(self.data)} entries from {filespec}")
 
     def parse(self,
                 data: Series,
@@ -82,10 +83,6 @@ class Overture(object):
                     entry[key] = value[0]
                 continue
             if key == 'sources' and type(value) == list:
-                if type(value) == ndarray:
-                    import epdb; epdb.st()
-                if type(value[0]) == ndarray:
-                    import epdb; epdb.st()
                 if 'dataset' in value[0]:
                     entry['source'] = value[0]['dataset']
                 if 'recordId' in valve[0] and ['recordId'] is not None:

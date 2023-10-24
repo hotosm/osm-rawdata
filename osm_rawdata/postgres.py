@@ -370,7 +370,7 @@ class DatabaseAccess(object):
             return FeatureCollection(features)
 
         # If there is no config file, don't modify the results
-        if len(self.qc.config['where']['ways_poly']) == 0 and len(self.qc.config['where']['nodes']) == 0:
+        if len(self.qc.config["where"]["ways_poly"]) == 0 and len(self.qc.config["where"]["nodes"]) == 0:
             return result
 
         for item in result:

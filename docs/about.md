@@ -1,6 +1,6 @@
 # osm-rawdata
 
-🕮 [Documentation](https://hotosm.github.io/osm-rawdata/)
+📖 [Documentation](https://hotosm.github.io/osm-rawdata/)
 
 These is a module to work with
 [OpenStreetMap](https://www.openstreetmap.org) data using postgres and

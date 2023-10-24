@@ -20,35 +20,31 @@
 # <info@hotosm.org>
 
 import argparse
+import concurrent.futures
 import logging
 import subprocess
 import sys
-import os
-import concurrent.futures
-import geojson
-from geojson import Feature, FeatureCollection
-from sys import argv
 from pathlib import Path
-from cpuinfo import get_cpu_info
-from shapely.geometry import shape
+from sys import argv
 
+import geojson
 import pyarrow.parquet as pq
 from codetiming import Timer
-from osm_rawdata.postgres import uriParser
+from cpuinfo import get_cpu_info
 from progress.spinner import PixelSpinner
 from shapely import wkb
+from shapely.geometry import shape
 from sqlalchemy import MetaData, cast, column, create_engine, select, table, text
 from sqlalchemy.dialects.postgresql import JSONB, insert
+from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists
-from sqlalchemy.engine.base import Connection
-from shapely.geometry import Point, LineString, Polygon
-from shapely import wkt, wkb
 
 # Find the other files for this project
 import osm_rawdata as rw
 import osm_rawdata.db_models
 from osm_rawdata.db_models import Base
+from osm_rawdata.postgres import uriParser
 
 rootdir = rw.__path__[0]
 
@@ -57,12 +53,13 @@ log = logging.getLogger(__name__)
 
 # The number of threads is based on the CPU cores
 info = get_cpu_info()
-cores = info['count']
+cores = info["count"]
+
 
 def importThread(
-        data: list,
-        db: Connection,
-        ):
+    data: list,
+    db: Connection,
+):
     """Thread to handle importing
 
     Args:
@@ -70,15 +67,15 @@ def importThread(
         db (Connection): A database connection
     """
     # log.debug(f"In importThread()")
-    #timer = Timer(text="importThread() took {seconds:.0f}s")
-    #timer.start()
+    # timer = Timer(text="importThread() took {seconds:.0f}s")
+    # timer.start()
     ways = table(
         "ways_poly",
         column("id"),
         column("user"),
         column("geom"),
         column("tags"),
-        )
+    )
 
     nodes = table(
         "nodes",
@@ -86,7 +83,7 @@ def importThread(
         column("user"),
         column("geom"),
         column("tags"),
-        )
+    )
 
     index = 0
 
@@ -94,34 +91,35 @@ def importThread(
         # log.debug(feature)
         index -= 1
         entry = dict()
-        tags = feature['properties']
-        tags['building'] = 'yes'
-        entry['id'] = index
+        tags = feature["properties"]
+        tags["building"] = "yes"
+        entry["id"] = index
         ewkt = shape(feature["geometry"])
         geom = wkb.dumps(ewkt)
         type = ewkt.geom_type
         scalar = select(cast(tags, JSONB))
 
-        if type == 'Polygon':
+        if type == "Polygon":
             sql = insert(ways).values(
                 # id = entry['id'],
                 geom=geom,
                 tags=scalar,
-                )
-        elif type == 'Point':
+            )
+        elif type == "Point":
             sql = insert(nodes).values(
                 # id = entry['id'],
                 geom=geom,
                 tags=scalar,
-                )
+            )
 
         db.execute(sql)
         # db.commit()
 
+
 def parquetThread(
     data: list,
     db: Connection,
-    ):
+):
     """Thread to handle importing
 
     Args:
@@ -136,7 +134,7 @@ def parquetThread(
         column("user"),
         column("geom"),
         column("tags"),
-        )
+    )
 
     nodes = table(
         "nodes",
@@ -144,7 +142,7 @@ def parquetThread(
         column("user"),
         column("geom"),
         column("tags"),
-        )
+    )
 
     index = -1
     log.debug(f"There are {len(data)} entries in the data")
@@ -202,6 +200,7 @@ def parquetThread(
         # print(f"FIXME2: {entry}")
     timer.stop()
 
+
 class MapImporter(object):
     def __init__(
         self,
@@ -229,7 +228,7 @@ class MapImporter(object):
                 "CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS hstore;CREATE EXTENSION IF NOT EXISTS dblink;"
             )
             self.db.execute(sql)
-            #self.db.commit()
+            # self.db.commit()
 
             Base.metadata.create_all(bind=engine)
 
@@ -354,8 +353,8 @@ class MapImporter(object):
         """
         # load the GeoJson file
         file = open(infile, "r")
-        #size = os.path.getsize(infile)
-        #for line in file.readlines():
+        # size = os.path.getsize(infile)
+        # for line in file.readlines():
         #    print(line)
         data = geojson.load(file)
 
@@ -379,11 +378,11 @@ class MapImporter(object):
                 meta.create_all(engine)
 
         # A chunk is a group of threads
-        entries = len(data['features'])
+        entries = len(data["features"])
         chunk = round(entries / cores)
 
         if entries <= chunk:
-            result = importThread(data['features'], connections[0])
+            result = importThread(data["features"], connections[0])
             timer.stop()
             return True
 
@@ -391,13 +390,14 @@ class MapImporter(object):
             block = 0
             while block <= entries:
                 log.debug("Dispatching Block %d:%d" % (block, block + chunk))
-                result = executor.submit(importThread, data['features'][block : block + chunk], connections[index])
+                result = executor.submit(importThread, data["features"][block : block + chunk], connections[index])
                 block += chunk
                 index += 1
             executor.shutdown()
         timer.stop()
 
         return True
+
 
 def main():
     """This main function lets this class be run standalone by a bash script."""
@@ -440,6 +440,7 @@ def main():
     else:
         mi.importParquet(args.infile)
     log.info(f"Imported {args.infile} into {args.uri}")
+
 
 if __name__ == "__main__":
     """This is just a hook so this file can be run standalone during development."""

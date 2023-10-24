@@ -1,6 +1,6 @@
 # Overture Map Data
 
-The Overture Foundation (https://www.overturemaps.org) has been
+The Overture Foundation (<https://www.overturemaps.org>) has been
 recently formed to build a competitor to Google Maps. The plan is to
 use OpenStreetMap (OSM) data as a baselayer, and layer other datasets
 on top. The currently available data (July 2023) has 13 different
@@ -40,28 +40,27 @@ less columns in it, and each data type had a schema oriented towards
 that data type. The new schema (Oct 2023) is larger, but all the data
 types are supported in the same schema.
 
-The schema used in the Overture data files is [documented here](
-https://docs.overturemaps.org/reference). This document is just a
+The schema used in the Overture data files is [documented here](https://docs.overturemaps.org/reference). This document is just a
 summary with some implementation details.
 
 ### Buildings
 
 The current list of buildings datasets is:
 
-* Austin Building Footprints Year 2013 2D Buildings
-* Boston BPDA 3D Buildings
-* City of Cambridge, MA Open Data 3D Buildings
-* Denver Regional Council of Governments 2D Buildings
-* Esri Buildings | Austin Building Footprints Year 2013 2D Buildings
-* Esri Buildings | Denver Regional Council of Governments 2D Buildings
-* Esri Community Maps
-* Miami-Dade County Open Data 3D Buildings
-* OpenStreetMap
-* Microsoft ML Buildings
-* NYC Open Data 3D Buildings
-* Portland Building Footprint 2D Buildings
-* USGS Lidar
-* Washington DC Open Data 3D Buildings
+- Austin Building Footprints Year 2013 2D Buildings
+- Boston BPDA 3D Buildings
+- City of Cambridge, MA Open Data 3D Buildings
+- Denver Regional Council of Governments 2D Buildings
+- Esri Buildings | Austin Building Footprints Year 2013 2D Buildings
+- Esri Buildings | Denver Regional Council of Governments 2D Buildings
+- Esri Community Maps
+- Miami-Dade County Open Data 3D Buildings
+- OpenStreetMap
+- Microsoft ML Buildings
+- NYC Open Data 3D Buildings
+- Portland Building Footprint 2D Buildings
+- USGS Lidar
+- Washington DC Open Data 3D Buildings
 
 Since the Microsoft ML Buildings and the OpenStreetMap data is
 available elsewhere, and is more up-to-date for global coverage, all
@@ -78,30 +77,30 @@ accurate.
 
 ### Places
 
-The *places* data are POIs of places. This appears to be for
+The _places_ data are POIs of places. This appears to be for
 amenities, and contains tags related to that OSM category. This
 dataset is from Meta, and the data appears derived from Facebook.
 
 The columns that are of interest to OSM are:
 
-* freeform - The address of the amenity, although the format is not
+- freeform - The address of the amenity, although the format is not
   consistent
-* socials - An array of social media links for this amenity.
-* phone - The phone number if it has one
-* websites - The website URL if it has one
-* value - The name of the amenity if known
+- socials - An array of social media links for this amenity.
+- phone - The phone number if it has one
+- websites - The website URL if it has one
+- value - The name of the amenity if known
 
 ### Highways
 
-In the current highway *segment* data files, the only source is
+In the current highway _segment_ data files, the only source is
 OSM. In that cases it's better to use uptodate OSM data. It'll be
 interesting to see if Overture imports the publically available
 highway datasets from the USGS, or some state governments. That would
 be very useful.
 
-The Overture *segments* data files are equivalent to an OSM way, with
+The Overture _segments_ data files are equivalent to an OSM way, with
 tags specific to that highway linestring. There are separate data
-files for *connections*, that are equivalant to an OSM relation.
+files for _connections_, that are equivalant to an OSM relation.
 
 ### Admin Boundaries
 
@@ -115,10 +114,10 @@ reason to care about these files.
 The names column can have 4 variations on the name. Each may also have
 a language value as well.
 
-* common
-* official
-* alternate
-* short
+- common
+- official
+- alternate
+- short
 
 Each of these can have multiple values, each of which consists of a
 value and the language.
@@ -126,10 +125,10 @@ value and the language.
 ## sources
 
 The sources column is an array of with two entries. The first entry is
-the name of the dataset, and where it exists, a *recordID* to
+the name of the dataset, and where it exists, a _recordID_ to
 reference the source dataset. For OSM data, the recordID has 3
-sub-fields. The first character is the type, *w* (way), *n* (node), or
-*l* (line). The second is the OSM ID, and the third with a *v* is the
+sub-fields. The first character is the type, _w_ (way), _n_ (node), or
+_l_ (line). The second is the OSM ID, and the third with a _v_ is the
 version of the feature in OSM.
 
-For example: *w***123456**v2 is a way with ID 123456 and is version 2.
+For example: \*w**\*123456**v2 is a way with ID 123456 and is version 2.

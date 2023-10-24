@@ -14,57 +14,57 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-    
+
 import argparse
 import logging
+import math
 import sys
-import os
-from sys import argv
-from geojson import Point, Feature, FeatureCollection, dump, Polygon
+
 import geojson
-from shapely.geometry import shape, Polygon, mapping
-import shapely
-from shapely import wkt, wkb
-import pyarrow.parquet as pq
+import pandas as pd
+from codetiming import Timer
+from geojson import Feature, FeatureCollection
+from numpy import ndarray
+
 # import pyarrow as pa
 from pandas import Series
-import pandas as pd
-import math
-from numpy import ndarray
 from progress.spinner import PixelSpinner
-from codetiming import Timer
+from shapely import wkb
 
 # Instantiate logger
-log = logging.getLogger('osm-rawdata')
+log = logging.getLogger("osm-rawdata")
+
 
 class Overture(object):
-    def __init__(self,
-                 filespec: str,
-        ):
+    def __init__(
+        self,
+        filespec: str,
+    ):
         """A class for parsing Overture V2 files.
 
         Args:
             data (list): The list of features
         """
-        #pfile = pq.ParquetFile(filespec)
+        # pfile = pq.ParquetFile(filespec)
         # self.data = pfile.read()
         self.data = pd.read_parquet(filespec)
         self.filespec = filespec
         log.debug(f"Read {len(self.data)} entries from {filespec}")
 
-    def parse(self,
-                data: Series,
-                  ):
+    def parse(
+        self,
+        data: Series,
+    ):
         # log.debug(data)
         entry = dict()
         # timer = Timer(text="importParquet() took {seconds:.0f}s")
         # timer.start()
-        for key,value in data.to_dict().items():
+        for key, value in data.to_dict().items():
             if value is None:
                 continue
             if type(value) == float and math.isnan(value):
                 continue
-            if key == 'geometry':
+            if key == "geometry":
                 geom = wkb.loads(value)
             if type(value) == ndarray:
                 # print(f"LIST: {key} = {value}")
@@ -72,34 +72,42 @@ class Overture(object):
                     for k1, v1 in value[0].items():
                         if v1 is not None:
                             if type(v1) == ndarray:
-                                import epdb; epdb.st()
+                                import epdb
+
+                                epdb.st()
                             entry[k1] = v1
                 else:
                     # FIXME: for now the data only has one entry in the array,
                     # but this could change.
                     if type(value[0]) == ndarray:
-                        import epdb; epdb.st()
+                        import epdb
+
+                        epdb.st()
                     entry[key] = value[0]
                 continue
-            if key == 'sources' and type(value) == list:
+            if key == "sources" and type(value) == list:
                 if type(value) == ndarray:
-                    import epdb; epdb.st()
+                    import epdb
+
+                    epdb.st()
                 if type(value[0]) == ndarray:
-                    import epdb; epdb.st()
-                if 'dataset' in value[0]:
-                    entry['source'] = value[0]['dataset']
-                if 'recordId' in valve[0] and ['recordId'] is not None:
-                    entry['record'] = value[0]['recordId']
-                if value[0]['confidence'] is not None:
-                    entry['confidence'] = value[0]['confidence']
+                    import epdb
+
+                    epdb.st()
+                if "dataset" in value[0]:
+                    entry["source"] = value[0]["dataset"]
+                if "recordId" in valve[0] and ["recordId"] is not None:
+                    entry["record"] = value[0]["recordId"]
+                if value[0]["confidence"] is not None:
+                    entry["confidence"] = value[0]["confidence"]
                 else:
-                    entry['source'] = value['dataset']
-                if value[0]['recordId'] is not None:
-                    entry['record'] = value[0]['recordId']
-                if value[0]['confidence'] is not None:
-                    entry['confidence'] = value[0]['confidence']
+                    entry["source"] = value["dataset"]
+                if value[0]["recordId"] is not None:
+                    entry["record"] = value[0]["recordId"]
+                if value[0]["confidence"] is not None:
+                    entry["confidence"] = value[0]["confidence"]
             if type(value) == dict:
-                if key == 'bbox':
+                if key == "bbox":
                     continue
                 for k1, v1 in value.items():
                     if v1 is None:
@@ -110,7 +118,7 @@ class Overture(object):
                             if v2 is None:
                                 continue
                             if type(v2) == ndarray:
-                                for k3,v3 in v2.tolist()[0].items():
+                                for k3, v3 in v2.tolist()[0].items():
                                     if v3 is not None:
                                         entry[k3] = v3
                             elif type(v2) == str:
@@ -118,15 +126,16 @@ class Overture(object):
                         continue
                     # FIXME: we should use the language to adjust the name tag
                     # lang = v1[0]['language']
-        #timer.stop()
+        # timer.stop()
         return Feature(geometry=geom, properties=entry)
+
 
 def main():
     """This main function lets this class be run standalone by a bash script, primarily
     to assist in code development or debugging. This should really be a test case.
 
     """
-    categories = ('buildings', 'places', 'highways', 'admin', 'localities')
+    categories = ("buildings", "places", "highways", "admin", "localities")
     parser = argparse.ArgumentParser(
         prog="conflateDB",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -134,7 +143,7 @@ def main():
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("-i", "--infile", required=True, help="Input file")
-    parser.add_argument("-o", "--outfile", default='overture.geojson', help="Output file")
+    parser.add_argument("-o", "--outfile", default="overture.geojson", help="Output file")
 
     args = parser.parse_args()
 
@@ -143,9 +152,7 @@ def main():
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
         ch.setFormatter(formatter)
         log.addHandler(ch)
 
@@ -159,11 +166,11 @@ def main():
         spin.next()
         feature = overture.data.loc[index]
         entry = overture.parse(feature)
-        if entry['properties']['dataset'] != 'OpenStreetMap':
+        if entry["properties"]["dataset"] != "OpenStreetMap":
             features.append(entry)
 
     if len(features) > 0:
-        file = open(args.outfile, 'w')
+        file = open(args.outfile, "w")
         geojson.dump(FeatureCollection(features), file)
         timer.stop()
         log.info(f"Wrote {args.outfile}")
@@ -171,6 +178,7 @@ def main():
         log.info(f"There was no non OSM data in {args.infile}")
 
     spin.finish()
+
 
 if __name__ == "__main__":
     """This is just a hook so this file can be run standlone during development."""

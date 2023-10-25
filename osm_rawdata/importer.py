@@ -166,6 +166,8 @@ def parquetThread(
 
     index = -1
     log.debug(f"There are {len(data)} entries in the data")
+    if  len(data) == 0:
+        return
 
     overture = Overture()
     for index in data.index:
@@ -336,6 +338,8 @@ class MapImporter(object):
         with concurrent.futures.ThreadPoolExecutor(max_workers=cores) as executor:
             block = 0
             while block <= entries:
+                if len(overture.data[block : block + chunk]) == 0:
+                    continue
                 log.debug("Dispatching Block %d:%d" % (block, block + chunk))
                 result = executor.submit(parquetThread, overture.data[block : block + chunk], connections[index])
                 block += chunk

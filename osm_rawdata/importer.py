@@ -170,8 +170,10 @@ def parquetThread(
     overture = Overture()
     for index in data.index:
         feature = data.loc[index]
+        dataset = feature['sources'][0]['dataset']
+        if dataset == 'OpenStreetMap' or dataset == 'Microsoft ML Buildings':
+            continue
         tags = overture.parse(feature)
-        # geom = wkb.loads(feature['geometry'])
         geom = feature['geometry']
         geom_type = wkb.loads(geom).geom_type
         scalar = select(cast(tags['properties'], JSONB))
@@ -183,6 +185,7 @@ def parquetThread(
                 tags=scalar,
             )
 #        elif geom_type == 'MultiPolygon':
+#            continue
 #            sql = insert(ways).values(
 #                # osm_id = entry['osm_id'],
 #                geom=geom[0],
@@ -302,30 +305,9 @@ class MapImporter(object):
         Returns:
             (bool): Whether the import finished sucessfully
         """
-        # engine = create_engine(f"postgresql://{self.dburi}")
-        # engine = create_engine(f"postgresql://{self.dburi}", echo=True)
-        # if not database_exists(engine.url):
-        #     create_database(engine.url)
-        # else:
-        #     conn = engine.connect()
-
-        # session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-        # meta = MetaData()
-        # meta.create_all(engine)
-
         # spin = PixelSpinner(f"Processing {infile}...")
         timer = Timer(text="importParquet() took {seconds:.0f}s")
         timer.start()
-        # ways = table(
-        #     "ways_poly",
-        #     column("id"),
-        #     column("user"),
-        #     column("geom"),
-        #     column("tags"),
-        # )
-        # pfile = pq.ParquetFile(infile)
-        # data = pfile.read()
         overture = Overture(infile)
 
         connections = list()
@@ -387,17 +369,6 @@ class MapImporter(object):
 
         timer = Timer(text="importGeoJson() took {seconds:.0f}s")
         timer.start()
-
-        # for thread in range(0, cores + 1):
-        #     engine = create_engine(f"postgresql://{self.dburi}", echo=False)
-        #     if not database_exists(engine.url):
-        #         create_database(engine.url)
-        #     connections.append(engine.connect())
-        #     sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-        #     if thread == 0:
-        #         meta = MetaData()
-        #         meta.create_all(engine)
 
         # A chunk is a group of threads
         entries = len(data['features'])

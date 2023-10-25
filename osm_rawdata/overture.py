@@ -49,8 +49,11 @@ class Overture(object):
         #pfile = pq.ParquetFile(filespec)
         # self.data = pfile.read()
         if filespec:
-            self.data = pd.read_parquet(filespec)
-            log.debug(f"Read {len(self.data)} entries from {filespec}")
+            try:
+                self.data = pd.read_parquet(filespec)
+                log.debug(f"Read {len(self.data)} entries from {filespec}")
+            except:
+                log.error(f"Couldn't read data from {filespec}!")
         self.filespec = filespec
 
     def parse(self,

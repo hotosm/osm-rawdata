@@ -182,6 +182,12 @@ def parquetThread(
                 geom=geom,
                 tags=scalar,
             )
+#        elif geom_type == 'MultiPolygon':
+#            sql = insert(ways).values(
+#                # osm_id = entry['osm_id'],
+#                geom=geom[0],
+#                tags=scalar,
+#            )
         elif geom_type == 'Point':
             sql = insert(nodes).values(
                 # osm_id = entry['osm_id'],
@@ -339,7 +345,7 @@ class MapImporter(object):
         log.debug(f"There are {entries} entries in {infile}")
         chunk = round(entries / cores)
 
-        if True: # FIXME: should be entries <= chunk:
+        if entries <= chunk:
             result = parquetThread(overture.data, connections[0])
             timer.stop()
             return True

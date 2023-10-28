@@ -182,29 +182,28 @@ def parquetThread(
         geom = feature['geometry']
         hex = wkb.loads(geom, hex=True)
         gdata = geoalchemy2.shape.from_shape(hex, srid=4326, extended=True)
-        geom_type = wkb.loads(geom).geom_type
+        # geom_type = wkb.loads(geom).geom_type
         scalar = select(cast(tags['properties'], JSONB))
         sql = None
-        if geom_type == 'Polygon':
+        if hex.geom_type == 'Polygon':
             sql = insert(ways).values(
                 # osm_id = entry['osm_id'],
                 geom=bytes(gdata.data),
                 tags=scalar,
             )
-#        elif geom_type == 'MultiPolygon':
-#            continue
-#            sql = insert(ways).values(
-#                # osm_id = entry['osm_id'],
-#                geom=geom[0],
-#                tags=scalar,
-#            )
-        elif geom_type == 'Point':
+        elif hex.geom_type == 'MultiPolygon':
+            gdata = geoalchemy2.shape.from_shape(hex.convex_hull, srid=4326, extended=True)
+            sql = insert(ways).values(
+                geom=bytes(gdata.data),
+                tags=scalar,
+            )
+        elif hex.geom_type == 'Point':
             sql = insert(nodes).values(
                 # osm_id = entry['osm_id'],
                 geom=bytes(gdata.data),
                 tags=scalar,
             )
-        elif geom_type == 'LineString':
+        elif hex.geom_type == 'LineString':
             sql = insert(lines).values(
                 # osm_id = entry['osm_id'],
                 geom=bytes(gdata.data),

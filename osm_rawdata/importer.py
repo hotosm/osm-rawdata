@@ -31,6 +31,9 @@ from sys import argv
 from pathlib import Path
 from cpuinfo import get_cpu_info
 from shapely.geometry import shape
+# from geoalchemy2 import shape
+import geoalchemy2
+import shapely
 
 from pandas import DataFrame
 import pyarrow.parquet as pq
@@ -177,13 +180,15 @@ def parquetThread(
             continue
         tags = overture.parse(feature)
         geom = feature['geometry']
+        hex = wkb.loads(geom, hex=True)
+        gdata = geoalchemy2.shape.from_shape(hex, srid=4326, extended=True)
         geom_type = wkb.loads(geom).geom_type
         scalar = select(cast(tags['properties'], JSONB))
         sql = None
         if geom_type == 'Polygon':
             sql = insert(ways).values(
                 # osm_id = entry['osm_id'],
-                geom=geom,
+                geom=bytes(gdata.data),
                 tags=scalar,
             )
 #        elif geom_type == 'MultiPolygon':
@@ -196,13 +201,13 @@ def parquetThread(
         elif geom_type == 'Point':
             sql = insert(nodes).values(
                 # osm_id = entry['osm_id'],
-                geom=geom,
+                geom=bytes(gdata.data),
                 tags=scalar,
             )
         elif geom_type == 'LineString':
             sql = insert(lines).values(
                 # osm_id = entry['osm_id'],
-                geom=geom,
+                geom=bytes(gdata.data),
                 tags=scalar,
             )
         else:
@@ -274,7 +279,6 @@ class MapImporter(object):
 
         Args:
             infile (str): The file to import
-
         Returns:
             (bool): Whether the import finished sucessfully
         """

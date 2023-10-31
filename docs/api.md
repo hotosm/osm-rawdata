@@ -28,3 +28,15 @@ heading_level: 3
 options:
 show_source: false
 heading_level: 3
+
+## importer.py
+::: osm_rawdata.importer.MapImporter
+options:
+show_source: false
+heading_level: 3
+
+## overture.py
+::: osm_rawdata.overture.Overture
+options:
+show_source: false
+heading_level: 3

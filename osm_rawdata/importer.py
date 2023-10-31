@@ -113,7 +113,7 @@ def importThread(
         ewkt = shape(feature["geometry"])
         geom = wkb.dumps(ewkt)
         type = ewkt.geom_type
-        scalar = select(cast(tags, JSONB))
+        scalar = select(cast(tags, JSONB)).scalar_subquery()
 
         if type == 'Polygon':
             sql = insert(ways).values(
@@ -183,7 +183,7 @@ def parquetThread(
         hex = wkb.loads(geom, hex=True)
         gdata = geoalchemy2.shape.from_shape(hex, srid=4326, extended=True)
         # geom_type = wkb.loads(geom).geom_type
-        scalar = select(cast(tags['properties'], JSONB))
+        scalar = select(cast(tags['properties'], JSONB)).scalar_subquery()
         sql = None
         if hex.geom_type == 'Polygon':
             sql = insert(ways).values(
@@ -338,7 +338,7 @@ class MapImporter(object):
             return True
 
         index = 0
-        with concurrent.futures.ThreadPoolExecutor(max_workers=cores) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=cores) as executor:
             block = 0
             while block <= entries:
                 if len(overture.data[block : block + chunk]) == 0:

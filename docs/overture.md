@@ -35,7 +35,7 @@ parse any of the data files that are using the V2 schema into GeoJson.
 
 ## Schema
 
-There are two versions of the file schema. The original schemawas had
+There are two versions of the file schema. The original schemas had
 less columns in it, and each data type had a schema oriented towards
 that data type. The new schema (Oct 2023) is larger, but all the data
 types are supported in the same schema.
@@ -45,7 +45,20 @@ summary with some implementation details.
 
 ### Buildings
 
-The current list of buildings datasets is:
+The current coverage area is primarily the US, with New Zealand, and
+some random citites in Europe like Berlin. This is excluding the
+OpenStreetMap and Microsoft ML Buildings, which do have global
+coverage. But as those are available from other sources, which will
+often be more up to data than the Overture anyway. Conflation reguires
+fresh data.
+
+The data appears to not be processed for duplicates or bad geometries,
+but that is what the [Conflator](https://github.com/hotosm/conflator)
+and [Underpass ](https://github.com/hotosm/underpass/wiki) projects
+are for, to clean the data for possible imports. The license is Odbl,
+so suitable for OSM.
+
+### The current list of buildings datasets in V1 (July 2023) is:
 
 - Austin Building Footprints Year 2013 2D Buildings
 - Boston BPDA 3D Buildings
@@ -62,9 +75,22 @@ The current list of buildings datasets is:
 - USGS Lidar
 - Washington DC Open Data 3D Buildings
 
-Since the Microsoft ML Buildings and the OpenStreetMap data is
-available elsewhere, and is more up-to-date for global coverage, all
-of the other datasets are US only at this time.
+### The current list of buildings datasets in V2 (Oct 2023) is:
+
+- Portland Building Footprint 2D Buildings
+- Esri Community Maps
+- USGS Lidar
+- Esri Buildings | Austin Building Footprints Year 2013 2D Buildings
+- Esri Buildings | Denver Regional Council of Governments 2D Buildings
+- City of Cambridge, MA Open Data 3D Buildings
+- Miami-Dade County Open Data 3D Buildings
+- Washington DC Open Data 3D Buildings
+- Denver Regional Council of Governments 2D Buildings
+- Boston BPDA 3D Buildings
+- NYC Open Data 3D Buildings
+- Austin Building Footprints Year 2013 2D Buildings
+- OpenStreetMap
+- Microsoft ML Buildings
 
 The primary columns of interest to OSM are the number of building
 floors, the height in meters, and the name if it has one. These
@@ -73,15 +99,22 @@ can be added to OSM during conflation.
 
 As a warning, the USGS Lidar dataset has many really bad building
 geometries, so it's only the height column that is useful, if
-accurate.
+accurate. This dataset does appear to have many buildings not in the
+other datasets, but the geometries are barely usable. Conflation does
+add these as new buildings though, but will often require manual
+tracing to fix the geometries. This dataset is useful for finding many
+missing buildings, but is US only.
 
 ### Places
 
 The _places_ data are POIs of places. This appears to be for
-amenities, and contains tags related to that OSM category. This
-dataset is from Meta, and the data appears derived from Facebook.
+amenities, and contains tags related to that OSM category. It has
+global coverage and is multi-lingual. This dataset is from Meta and
+the Microsoft. This dataset is licensed
+[CDLA](https://osmfoundation.org/wiki/CDLA_permissive_compatibility),
+which is a new license, but has been approved for imports into OSM.
 
-The columns that are of interest to OSM are:
+The columns that are of interest in the data to OSM are:
 
 - freeform - The address of the amenity, although the format is not
   consistent
@@ -89,22 +122,31 @@ The columns that are of interest to OSM are:
 - phone - The phone number if it has one
 - websites - The website URL if it has one
 - value - The name of the amenity if known
+- locality - The location on the planet, usually a city
+
+A quick scan seems to show personal data and not just amenities. There
+doesn't appear to be sufficient metadata to filter this automatically
+without following the link to their facebook page. There are many
+amenities though, but has the same problem.
 
 ### Highways
 
-In the current highway _segment_ data files, the only source is
-OSM. In that cases it's better to use uptodate OSM data. It'll be
+In the current highway _segment_ data files, the only source currently
+is OSM. In that cases it's better to use up to date OSM data. It'll be
 interesting to see if Overture imports the publically available
 highway datasets from the USGS, or some state governments. That would
-be very useful.
+be very useful. But otherwise the highway data is useless to improve
+map data.
 
 The Overture _segments_ data files are equivalent to an OSM way, with
 tags specific to that highway linestring. There are separate data
-files for _connections_, that are equivalant to an OSM relation.
+files for _connections_, that are equivalant to an OSM relation. Once
+again though, since all the data is currently from OSM, it's better to
+just use OSM data.
 
-### Admin Boundaries
+### Admin Boundaries And Base Data
 
-The administrative boundaries data is only OSM data, so there is no
+Currently all the data in these datsets is from OSM, so there is no
 reason to care about these files.
 
 # Special Columns

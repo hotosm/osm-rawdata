@@ -178,7 +178,7 @@ def parquetThread(
         hex = wkb.loads(geom, hex=True)
         gdata = geoalchemy2.shape.from_shape(hex, srid=4326, extended=True)
         # geom_type = wkb.loads(geom).geom_type
-        scalar = select(cast(tags['properties'], JSONB)).scalar_subquery()
+        scalar = select(cast(tags["properties"], JSONB)).scalar_subquery()
         sql = None
         if hex.geom_type == "Polygon":
             sql = insert(ways).values(

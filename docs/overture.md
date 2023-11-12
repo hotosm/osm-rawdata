@@ -54,11 +54,11 @@ fresh data.
 
 The data appears to not be processed for duplicates or bad geometries,
 but that is what the [Conflator](https://github.com/hotosm/conflator)
-and [Underpass ](https://github.com/hotosm/underpass/wiki) projects
+and [Underpass](https://github.com/hotosm/underpass/wiki) projects
 are for, to clean the data for possible imports. The license is Odbl,
 so suitable for OSM.
 
-### The current list of buildings datasets in V1 (July 2023) is:
+### The current list of buildings datasets in V1 (July 2023) is
 
 - Austin Building Footprints Year 2013 2D Buildings
 - Boston BPDA 3D Buildings
@@ -75,7 +75,7 @@ so suitable for OSM.
 - USGS Lidar
 - Washington DC Open Data 3D Buildings
 
-### The current list of buildings datasets in V2 (Oct 2023) is:
+### The current list of buildings datasets in V2 (Oct 2023) is
 
 - Portland Building Footprint 2D Buildings
 - Esri Community Maps

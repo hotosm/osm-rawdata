@@ -11,7 +11,7 @@ dependencies = [
     "requests>=2.28.2",
     "shapely>=2.0.1",
     "geojson>=2.5.0",
-    "pyarrow>=1.24.2",
+    "pyarrow>=14.0.1",
     "sqlalchemy>=1.4.41",
     "GeoAlchemy2>=0.12.5",
     "SQLAlchemy-Utils>=0.41.1",
@@ -48,12 +48,13 @@ pythonpath = "osm_rawdata"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.1.4"
+version = "0.1.5"
 version_files = [
     "pyproject.toml:version",
     "osm_rawdata/__version__.py",
     "Makefile:VERSION",
 ]
+update_changelog_on_bump = true
 
 [tool.pdm]
 version = {from = "osm_rawdata/__version__.py"}

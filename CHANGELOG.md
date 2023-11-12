@@ -1,3 +1,20 @@
+## 0.1.5 (2023-11-10)
+
+### Fix
+
+- Add .scalar_subquery to get rid of the warning message
+- Add the two new utilities
+- Add more details on the data files
+- Add support for importing multipolygons
+- Depending on the version of dependant libraries, we need to set the SRID as it's not always set
+- Don't try to process data if the list is empty
+- Wrap reading parquet file with try/except since sometimes pyarrow core dumps
+- Remove commented out code blocks, don't add OSM or MS buildings when importing Overture data as it's already out of date
+- Oope, reenable mutli-threading
+- Use new Overture class, which handles all the schema variations for Overture V2 data formatted files
+- Add more content on Overture data files
+- Support parsing all the different Overture data files
+
 ## 0.1.4 (2023-10-23)
 
 ### Fix

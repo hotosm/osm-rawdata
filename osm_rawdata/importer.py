@@ -288,7 +288,7 @@ class MapImporter(object):
                 "--extra-attributes",
                 "--output=flex",
                 "--style",
-                f"{rootdir}/raw.lua",
+                f"{rootdir}/raw_with_ref.lua",
                 f"{infile}",
             ]
         )

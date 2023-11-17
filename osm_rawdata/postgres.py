@@ -478,31 +478,7 @@ class PostgresClient(DatabaseAccess):
                 log.error(f"{path} is an unsupported file format!")
                 quit()
 
-    def createTable(
-        self,
-        sql: str,
-    ):
-        """Create a table in the database
-
-        Args:
-            sqlfile (str): The SQL
-
-        Returns:
-            (bool): The table creation status
-        """
-        log.info("Creating table schema")
-        result = self.dbcursor.execute(sql)
-
-        # path = Path(sqlfile)
-        # sql = f"INSERT INTO schemas(schema, version) VALUES('{sqlfile.stem}', 1.0)"
-        # result = self.pg.dbcursor.execute(sql)
-
-        return True
-
-    def createDB(
-        self,
-        dburi: uriParser = None,
-    ):
+    def createDB(self, dburi: uriParser):
         """Setup the postgres database connection.
 
         Args:
@@ -511,20 +487,14 @@ class PostgresClient(DatabaseAccess):
         Returns:
             status (bool): Whether the data base connection was sucessful
         """
-        if dburi:
-            uri = dburi
-        else:
-            uri = self.uri
-        sql = f"SELECT * FROM pg_database WHERE datname = '{uri['dbname']}'"
+        sql = f"CREATE DATABASE IF NOT EXISTS {self.dbname}"
         self.dbcursor.execute(sql)
         result = self.dbcursor.fetchall()
-        # log.info("Query returned %d records" % len(result))
-        if len(result) > 0:
-            log.warning(f"Database {uri['dbname']} already exists!")
-            return True
+        log.info("Query returned %d records" % len(result))
+        # result = subprocess.call("createdb", uri.dbname)
 
         # Add the extensions needed
-        sql = f"CREATE DATABASE {uri['dbname']}; CREATE EXTENSION postgis; CREATE EXTENSION hstore;"
+        sql = "CREATE EXTENSION postgis; CREATE EXTENSION hstore;"
         self.dbcursor.execute(sql)
         result = self.dbcursor.fetchall()
         log.info("Query returned %d records" % len(result))

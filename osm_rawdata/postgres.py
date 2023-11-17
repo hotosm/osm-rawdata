@@ -478,11 +478,11 @@ class PostgresClient(DatabaseAccess):
                 log.error(f"{path} is an unsupported file format!")
                 quit()
 
-    def createTable(self,
-                    sql: str,
-                    ):
-        """
-        Create a table in the database
+    def createTable(
+        self,
+        sql: str,
+    ):
+        """Create a table in the database
 
         Args:
             sqlfile (str): The SQL
@@ -490,7 +490,7 @@ class PostgresClient(DatabaseAccess):
         Returns:
             (bool): The table creation status
         """
-        log.info(f"Creating table schema")
+        log.info("Creating table schema")
         result = self.dbcursor.execute(sql)
 
         # path = Path(sqlfile)
@@ -499,9 +499,10 @@ class PostgresClient(DatabaseAccess):
 
         return True
 
-    def createDB(self,
-                 dburi: uriParser = None,
-                 ):
+    def createDB(
+        self,
+        dburi: uriParser = None,
+    ):
         """Setup the postgres database connection.
 
         Args:

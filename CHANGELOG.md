@@ -1,3 +1,12 @@
+## 0.1.6 (2023-11-18)
+
+### Fix
+
+- Use style that preserves refs for ways
+- Add link to overture doc
+- Add lua file that preserves refs
+- Add method for creating a table in a database
+
 ## 0.1.5 (2023-11-10)
 
 ### Fix

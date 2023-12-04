@@ -325,9 +325,9 @@ class DatabaseAccess(object):
         return sql
 
     def createTable(
-            self,
-            sql: str,
-        ):
+        self,
+        sql: str,
+    ):
         """Create a table in the database
 
         Args:

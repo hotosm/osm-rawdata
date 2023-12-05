@@ -1,3 +1,9 @@
+## 0.1.7 (2023-12-05)
+
+### Fix
+
+- Add method to create tables in the database
+
 ## 0.1.6 (2023-11-18)
 
 ### Fix

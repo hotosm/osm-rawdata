@@ -382,7 +382,7 @@ class DatabaseAccess(object):
             elif query.find(" relations ") > 0:
                 query = query.replace("relations", "relations_view")
 
-        log.debug(query)
+        # log.debug(query)
         self.dbcursor.execute(query)
         try:
             result = self.dbcursor.fetchall()

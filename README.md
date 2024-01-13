@@ -29,7 +29,7 @@
   <a href="https://pypistats.org/packages/osm-rawdata" target="_blank">
       <img src="https://img.shields.io/pypi/dm/osm-rawdata.svg" alt="Downloads">
   </a>
-  <a href="https://github.com/hotosm/osm-rawdata/blob/main/LICENSE" target="_blank">
+  <a href="https://github.com/hotosm/osm-rawdata/blob/main/LICENSE.md" target="_blank">
       <img src="https://img.shields.io/github/license/hotosm/osm-rawdata.svg" alt="License">
   </a>
 </p>

@@ -74,5 +74,6 @@ nav:
       - YAML: yaml.md
       - Overture: overture.md
   - API: api.md
-  - License: LICENSE
+  - License: LICENSE.md
   - Changelog: CHANGELOG.md
+  - Versioning: https://docs.hotosm.org/dev-guide/version-control/#creating-releases

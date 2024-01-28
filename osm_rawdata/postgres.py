@@ -155,6 +155,12 @@ class DatabaseAccess(object):
             except Exception as e:
                 log.error(f"Couldn't connect to database: {e}")
 
+    def __del__(self):
+        """
+        Close any open connections to Postgres.
+        """
+        self.dbshell.close()
+
     def createJson(
         self,
         config: QueryConfig,
@@ -259,10 +265,6 @@ class DatabaseAccess(object):
                 select += "ST_AsText(ST_Centroid(geom))"
             select += ", osm_id, version, "
             for entry in config.config["select"][table]:
-                if type(entry) == str:
-                    import epdb
-
-                    epdb.st()
                 for k1, v1 in entry.items():
                     select += f"tags->>'{k1}', "
             select = select[:-2]
@@ -287,6 +289,12 @@ class DatabaseAccess(object):
             jor = ""
             for entry in join_or:
                 for k, v in entry.items():
+                    if type(v[0]) == list:
+                        # It's an array of values
+                        value = str(v[0])
+                        any = f"ANY(ARRAY{value})"
+                        jor += f"tags->>'{k}'={any} OR "
+                        continue
                     if k == "op":
                         continue
                     if len(v) == 1:
@@ -382,7 +390,7 @@ class DatabaseAccess(object):
             elif query.find(" relations ") > 0:
                 query = query.replace("relations", "relations_view")
 
-        log.debug(query)
+        # log.debug(query)
         self.dbcursor.execute(query)
         try:
             result = self.dbcursor.fetchall()

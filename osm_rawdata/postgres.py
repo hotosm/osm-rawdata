@@ -145,13 +145,13 @@ class DatabaseAccess(object):
                 connect += f" user={self.uri['dbuser']}"
             if "dbpass" in self.uri and self.uri["dbpass"] is not None:
                 connect += f" password={self.uri['dbpass']}"
-            log.debug(f"Connecting with: {connect}")
+            # log.debug(f"Connecting with: {connect}")
             try:
                 self.dbshell = psycopg2.connect(connect)
                 self.dbshell.autocommit = True
                 self.dbcursor = self.dbshell.cursor()
-                if self.dbcursor.closed == 0:
-                    log.info(f"Opened cursor in {self.uri['dbname']}")
+                if self.dbcursor.closed != 0:
+                    log.error(f"Couldn't open cursor in {self.uri['dbname']}")
             except Exception as e:
                 log.error(f"Couldn't connect to database: {e}")
 

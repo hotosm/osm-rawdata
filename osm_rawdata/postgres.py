@@ -289,12 +289,14 @@ class DatabaseAccess(object):
             jor = ""
             for entry in join_or:
                 for k, v in entry.items():
-                    if type(v[0]) == list:
-                        # It's an array of values
-                        value = str(v[0])
-                        any = f"ANY(ARRAY{value})"
-                        jor += f"tags->>'{k}'={any} OR "
-                        continue
+                    # Check if v is a non-empty list
+                    if isinstance(v, list) and v:
+                        if isinstance(v[0], list):
+                            # It's an array of values
+                            value = str(v[0])
+                            any = f"ANY(ARRAY{value})"
+                            jor += f"tags->>'{k}'={any} OR "
+                            continue
                     if k == "op":
                         continue
                     if len(v) == 1:

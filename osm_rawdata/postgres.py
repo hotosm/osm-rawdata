@@ -480,13 +480,24 @@ class DatabaseAccess(object):
         task_query_url = f"{self.url}/tasks/status/{task_id}"
         log.debug(f"Raw Data API Query URL: {task_query_url}")
 
-        while True:
+        polling_interval = 2  # Initial polling interval in seconds
+        max_polling_duration = 600  # Maximum duration for polling in seconds (10 minutes)
+        elapsed_time = 0
+
+        while elapsed_time < max_polling_duration:
             result = self.session.get(task_query_url, headers=self.headers)
             result_json = result.json()
+
             if result_json.get("status") == "PENDING":
-                # Wait 2 seconds before trying again
-                log.debug("Waiting 2 seconds before polling API again...")
-                time.sleep(2)
+                # Adjust polling frequency after the first minute
+                if elapsed_time > 60:
+                    polling_interval = 10  # Poll every 10 seconds after the first minute
+
+                # Wait before polling again
+                log.debug(f"Waiting {polling_interval} seconds before polling API again...")
+                time.sleep(polling_interval)
+                elapsed_time += polling_interval
+
             elif result_json.get("status") == "SUCCESS":
                 break
 

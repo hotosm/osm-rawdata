@@ -156,10 +156,9 @@ class DatabaseAccess(object):
                 log.error(f"Couldn't connect to database: {e}")
 
     def __del__(self):
-        """
-        Close any open connections to Postgres.
-        """
-        self.dbshell.close()
+        """Close any open connections to Postgres."""
+        if self.dbshell:
+            self.dbshell.close()
 
     def createJson(
         self,

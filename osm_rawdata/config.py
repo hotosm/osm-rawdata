@@ -19,16 +19,16 @@
 # 1100 13th Street NW Suite 800 Washington, D.C. 20005
 # <info@hotosm.org>
 
-from typing import Union
-from io import BytesIO
 import argparse
 import json
 import logging
 import sys
+from io import BytesIO
 
 # import time
 from pathlib import Path
 from sys import argv
+from typing import Union
 
 import flatdict
 import yaml

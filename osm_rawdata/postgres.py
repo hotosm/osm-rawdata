@@ -484,30 +484,52 @@ class PostgresClient(DatabaseAccess):
     def __init__(
         self,
         uri: str,
-        config: str = None,
+        config: Optional[Union[str, BytesIO]] = None,
         # output: str = None
     ):
         """This is a client for a postgres database.
 
         Args:
-            uri (str): The URI string for the database connection
-            config (str): The filespec for the query config file
+            uri (str): The URI string for the database connection.
+            config (str, BytesIO): The query config file path or BytesIO object.
+                Currently only YAML format is accepted if BytesIO is passed.
 
         Returns:
             (bool): Whether the data base connection was sucessful
         """
         super().__init__(uri)
         self.qc = QueryConfig()
+
         if config:
-            # Load the config file for the SQL query
-            path = Path(config)
-            if path.suffix == ".json":
-                self.qc.parseJson(config)
-            elif path.suffix == ".yaml":
-                self.qc.parseYaml(config)
+            # filespec string passed
+            if isinstance(config, str):
+                path = Path(config)
+                if not path.exists():
+                    raise FileNotFoundError(f"Config file does not exist {config}")
+                with open(config, "rb") as config_file:
+                    config_data = BytesIO(config_file.read())
+                if path.suffix == ".json":
+                    config_type = "json"
+                elif path.suffix == ".yaml":
+                    config_type = "yaml"
+                else:
+                    log.error(f"Unsupported file format: {config}")
+                    raise ValueError(f"Invalid config {config}")
+
+            # BytesIO object passed
+            elif isinstance(config, BytesIO):
+                config_data = config
+                config_type = "yaml"
+
             else:
-                log.error(f"{path} is an unsupported file format!")
-                quit()
+                log.warning(f"Config input is invalid for PostgresClient: {config}")
+                raise ValueError(f"Invalid config {config}")
+
+            # Parse the config
+            if config_type == "json":
+                self.qc.parseJson(config_data)
+            elif config_type == "yaml":
+                self.qc.parseYaml(config_data)
 
     def createDB(self, dburi: uriParser):
         """Setup the postgres database connection.

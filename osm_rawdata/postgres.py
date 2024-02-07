@@ -501,6 +501,11 @@ class DatabaseAccess(object):
             elif result_json.get("status") == "SUCCESS":
                 break
 
+        else:
+            # Maximum polling duration reached
+            log.error(f"{max_polling_duration} second elapsed. Aborting data extract.")
+            return None
+
         zip_url = result_json["result"]["download_url"]
         result = self.session.get(zip_url, headers=self.headers)
         fp = BytesIO(result.content)

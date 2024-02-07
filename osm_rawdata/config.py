@@ -19,6 +19,8 @@
 # 1100 13th Street NW Suite 800 Washington, D.C. 20005
 # <info@hotosm.org>
 
+from typing import Union
+from io import BytesIO
 import argparse
 import json
 import logging
@@ -68,16 +70,16 @@ class QueryConfig(object):
         # for polygon extracts, sometimes we just want the center point
         self.centroid = False
 
-    def parseYaml(self, filespec: str):
+    def parseYaml(self, config: Union[str, BytesIO]):
         """Parse the YAML config file format into the internal data structure.
 
         Args:
-            filespec (str): The file to read.
+            config (str, BytesIO): the file or BytesIO object to read.
 
         Returns:
             config (dict): The config data.
         """
-        yaml_data = self.load_yaml(filespec)
+        yaml_data = self.load_yaml(config)
 
         self._yaml_parse_tables(yaml_data)
         self._yaml_parse_where(yaml_data)
@@ -87,7 +89,7 @@ class QueryConfig(object):
         return self.config
 
     @staticmethod
-    def load_yaml(filespec: str):
+    def load_yaml(config: Union[str, BytesIO]):
         """Private method to load YAML data from a file.
 
         Args:
@@ -96,8 +98,14 @@ class QueryConfig(object):
         Returns:
             data (dict): The loaded YAML data.
         """
-        with open(filespec, "r") as file:
-            return yaml.safe_load(file)
+        if isinstance(config, str):
+            with open(config, "r") as file:
+                return yaml.safe_load(file)
+        elif isinstance(config, BytesIO):
+            return yaml.safe_load(config.getvalue())
+        else:
+            log.error(f"Unsupported config format: {config}")
+            raise ValueError(f"Invalid config {config}")
 
     def _yaml_parse_tables(self, data):
         """Private method to parse 'from' data.
@@ -176,18 +184,25 @@ class QueryConfig(object):
                 for tag in data["keep"]:
                     self.config["select"][table].append({tag: []})
 
-    def parseJson(self, filespec: str):
+    def parseJson(self, config: Union[str, BytesIO]):
         """Parse the JSON format config file used by the raw-data-api
         and export tool.
 
         Args:
-            filespec (str): the file to read
+            config (str, BytesIO): the file or BytesIO object to read.
 
         Returns:
             config (dict): the config data
         """
-        file = open(filespec, "r")
-        data = json.load(file)
+        if isinstance(config, str):
+            with open(config, "r") as config_file:
+                data = json.load(config_file)
+        elif isinstance(config, BytesIO):
+            data = json.load(config)
+        else:
+            log.error(f"Unsupported config format: {config}")
+            raise ValueError(f"Invalid config {config}")
+
         # Get the geometry
         self.geometry = shape(data["geometry"])
         for key, value in flatdict.FlatDict(data).items():

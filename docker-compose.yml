@@ -1,0 +1,57 @@
+# Copyright (c) 2022, 2023 Humanitarian OpenStreetMap Team
+# This file is part of osm-rawdata.
+#
+#     osm-rawdata is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     osm-rawdata is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with osm-rawdata.  If not, see <https:#www.gnu.org/licenses/>.
+#
+
+version: "3"
+
+networks:
+  net:
+    name: osm-rawdata
+
+services:
+  rawdata:
+    image: "ghcr.io/hotosm/osm-rawdata:ci"
+    build:
+      target: ci
+    container_name: osm-rawdata
+    volumes:
+      # Mount local package
+      - ./osm_rawdata:/root/.local/lib/python3.10/site-packages/osm_rawdata
+      # Mount local tests
+      - ./tests:/data/tests
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - net
+    restart: "unless-stopped"
+    command: "pytest"
+
+  db:
+    image: "postgis/postgis:14-3.4-alpine"
+    environment:
+      - POSTGRES_USER=fmtm
+      - POSTGRES_PASSWORD=testpass
+      - POSTGRES_DB=underpass
+    networks:
+      - net
+    restart: "unless-stopped"
+    healthcheck:
+      test: pg_isready -U fmtm -d underpass
+      start_period: 5s
+      interval: 10s
+      timeout: 5s
+      retries: 3

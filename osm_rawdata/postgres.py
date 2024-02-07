@@ -29,6 +29,7 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 from sys import argv
+from typing import Optional, Union
 
 import geojson
 import psycopg2
@@ -439,7 +440,7 @@ class DatabaseAccess(object):
 
     def queryRemote(
         self,
-        query: str = None,
+        query: str,
     ):
         """This queries a remote postgres database using the FastAPI
         backend to the HOT Export Tool.
@@ -450,22 +451,47 @@ class DatabaseAccess(object):
         Returns:
             (FeatureCollection): the results of the query
         """
+        # Send the request to raw data api
+        result = None
+
         url = f"{self.url}/snapshot/"
-        result = self.session.post(url, data=query, headers=self.headers)
-        if result.status_code != 200:
-            log.error(f"{result.json()['detail'][0]['msg']}")
+        try:
+            result = self.session.post(url, data=query, headers=self.headers)
+            result.raise_for_status()
+        except requests.exceptions.HTTPError:
+            if result is not None:
+                error_dict = result.json()
+                error_dict["status_code"] = result.status_code
+                log.error(f"Failed to get extract from Raw Data API: {error_dict}")
+                return error_dict
+            else:
+                log.error("Failed to make request to raw data API")
+
+        if result is None:
+            log.error("Raw Data API did not return a response. Skipping.")
             return None
-        task_id = result.json()["task_id"]
-        newurl = f"{self.url}/tasks/status/{task_id}"
+
+        if result.status_code != 200:
+            error_message = result.json().get("detail")[0].get("msg")
+            log.error(f"{error_message}")
+            return None
+
+        task_id = result.json().get("task_id")
+        task_query_url = f"{self.url}/tasks/status/{task_id}"
+        log.debug(f"Raw Data API Query URL: {task_query_url}")
+
         while True:
-            result = self.session.get(newurl, headers=self.headers)
-            if result.json()["status"] == "PENDING":
-                log.debug("Retrying...")
-                time.sleep(1)
-            elif result.json()["status"] == "SUCCESS":
+            result = self.session.get(task_query_url, headers=self.headers)
+            result_json = result.json()
+            if result_json.get("status") == "PENDING":
+                # Wait 2 seconds before trying again
+                log.debug("Waiting 2 seconds before polling API again...")
+                time.sleep(2)
+            elif result_json.get("status") == "SUCCESS":
                 break
-        zip = result.json()["result"]["download_url"]
-        result = self.session.get(zip, headers=self.headers)
+
+        zip_url = result_json["result"]["download_url"]
+        result = self.session.get(zip_url, headers=self.headers)
         fp = BytesIO(result.content)
         zfp = zipfile.ZipFile(fp, "r")
         zfp.extract("Export.geojson", "/tmp/")
@@ -473,8 +499,6 @@ class DatabaseAccess(object):
         data = zfp.read("Export.geojson")
         os.remove("/tmp/Export.geojson")
         return json.loads(data)
-
-    #   return zfp.read("Export.geojson")
 
 
 class PostgresClient(DatabaseAccess):
@@ -591,8 +615,8 @@ class PostgresClient(DatabaseAccess):
                     alldata += result["features"]
             collection = FeatureCollection(alldata)
         else:
-            request = self.createJson(self.qc, poly, allgeom)
-            collection = self.queryRemote(request)
+            json_config = self.createJson(self.qc, poly, allgeom)
+            collection = self.queryRemote(json_config)
         return collection
 
 

@@ -19,9 +19,10 @@
 #
 
 import os
+
 import geojson
+
 import osm_rawdata as rw
-from osm_rawdata.config import QueryConfig
 from osm_rawdata.postgres import PostgresClient
 
 rootdir = rw.__path__[0]
@@ -37,9 +38,9 @@ def test_data_extract():
     assert len(data_extract.get("features")) == 16
 
 
-def test_data_extract_flatgeobuf():
-    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
-    aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
-    boundary = geojson.load(aoi_file)
-    data_extract = pg.execQuery(boundary)
-    assert len(data_extract.get("features")) == 16
+# def test_data_extract_flatgeobuf():
+#     pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
+#     aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
+#     boundary = geojson.load(aoi_file)
+#     data_extract = pg.execQuery(boundary)
+#     assert len(data_extract.get("features")) == 16

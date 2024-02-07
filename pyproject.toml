@@ -45,6 +45,8 @@ testpaths = [
     "tests",
 ]
 pythonpath = "osm_rawdata"
+log_cli = true
+log_cli_level = "DEBUG"
 
 [tool.commitizen]
 name = "cz_conventional_commits"

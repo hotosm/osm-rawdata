@@ -19,9 +19,10 @@
 #
 
 import os
+
 import geojson
+
 import osm_rawdata as rw
-from osm_rawdata.config import QueryConfig
 from osm_rawdata.postgres import PostgresClient
 
 rootdir = rw.__path__[0]

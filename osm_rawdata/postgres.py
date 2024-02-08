@@ -466,7 +466,7 @@ class DatabaseAccess(object):
     def queryRemote(
         self,
         query: str,
-    ) -> Optional[Union[str, dict]]:
+    ) -> Optional[Union[str, dict, BytesIO]]:
         """This queries a remote postgres database using the FastAPI
         backend to the HOT Export Tool.
 
@@ -474,8 +474,8 @@ class DatabaseAccess(object):
             query (str): The JSON query to execute.
 
         Returns:
-            (str, FeatureCollection): either the data URL, or extracted geojson.
-                Returns None on failure.
+            (str, FeatureCollection, BytesIO): either the data URL if bind_zip=False,
+                extracted geojson, else BytesIO file. Returns None on failure.
         """
         # Send the request to raw data api
         result = None
@@ -551,12 +551,19 @@ class DatabaseAccess(object):
         if not data_url.endswith(".zip"):
             return data_url
 
+        # Extract filename is set, else use Export.geojson
+        query_dict = json.loads(query)
+        file_type = query_dict.get("outputType", "geojson")
+        filename = f"{query_dict.get('fileName', 'Export')}.{file_type}"
+        # Get zip file and extract
         with self.session.get(data_url, headers=self.headers) as response:
             buffer = BytesIO(response.content)
             with zipfile.ZipFile(buffer, "r") as zipped_file:
-                with zipped_file.open("Export.geojson") as geojson_file:
-                    geojson_data = json.load(geojson_file)
-        return geojson_data
+                with zipped_file.open(filename) as extracted_data:
+                    if file_type == "geojson":
+                        return json.load(extracted_data)
+                    else:
+                        return BytesIO(extracted_data.read())
 
 
 class PostgresClient(DatabaseAccess):
@@ -699,7 +706,8 @@ class PostgresClient(DatabaseAccess):
             log.warning("No data returned for data extract")
             return collection
 
-        if not clip_to_aoi:
+        # If clip flag not set, or not geojson dict, return BytesIO data
+        if not clip_to_aoi or not isinstance(collection, dict):
             return collection
 
         # TODO this may be implemented in raw-data-api directly

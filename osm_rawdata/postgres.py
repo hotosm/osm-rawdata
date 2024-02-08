@@ -526,15 +526,18 @@ class DatabaseAccess(object):
             log.error(f"{max_polling_duration} second elapsed. Aborting data extract.")
             return None
 
-        zip_url = result_json["result"]["download_url"]
-        result = self.session.get(zip_url, headers=self.headers)
-        fp = BytesIO(result.content)
-        zfp = zipfile.ZipFile(fp, "r")
-        zfp.extract("Export.geojson", "/tmp/")
-        # Now take that taskid and hit /tasks/status url with get
-        data = zfp.read("Export.geojson")
-        os.remove("/tmp/Export.geojson")
-        return json.loads(data)
+        data_url = response_json.get("result", {}).get("download_url")
+        log.debug(f"Raw Data API Download URL: {data_url}")
+
+        if not data_url.endswith(".zip"):
+            return data_url
+
+        with self.session.get(data_url, headers=self.headers) as response:
+            buffer = BytesIO(response.content)
+            with zipfile.ZipFile(buffer, "r") as zipped_file:
+                with zipped_file.open("Export.geojson") as geojson_file:
+                    geojson_data = json.load(geojson_file)
+        return geojson_data
 
 
 class PostgresClient(DatabaseAccess):

@@ -185,7 +185,7 @@ class QueryConfig(object):
                     self.config["select"][table].append({tag: []})
 
     def parseJson(self, config: Union[str, BytesIO]):
-        """Parse the JSON format config file used by the raw-data-api and export tool.
+        """Parse the JSON format config file using the Underpass schema.
 
         Args:
             config (str, BytesIO): the file or BytesIO object to read.
@@ -193,6 +193,15 @@ class QueryConfig(object):
         Returns:
             config (dict): the config data
         """
+        # Check the type of config and load data accordingly
+        if isinstance(config, str):
+            with open(config, "r") as config_file:
+                data = json.load(config_file)
+        elif isinstance(config, BytesIO):
+            data = json.load(config)
+        else:
+            log.error(f"Unsupported config format: {config}")
+            raise ValueError(f"Invalid config {config}")
 
         # Helper function to convert geometry names
         def convert_geometry(geom):
@@ -203,16 +212,6 @@ class QueryConfig(object):
             elif geom == "polygon":
                 return "ways_poly"
             return geom
-
-        # Check the type of config and load data accordingly
-        if isinstance(config, str):
-            with open(config, "r") as config_file:
-                data = json.load(config_file)
-        elif isinstance(config, BytesIO):
-            data = json.load(config)
-        else:
-            log.error(f"Unsupported config format: {config}")
-            raise ValueError(f"Invalid config {config}")
 
         # Extract geometry
         self.geometry = shape(data["geometry"])

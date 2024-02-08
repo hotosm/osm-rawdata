@@ -536,8 +536,14 @@ class DatabaseAccess(object):
             log.error(f"Raw data api response in wrong format: {response_json}")
             return None
 
-        data_url = response_json.get("result", {}).get("download_url")
-        log.debug(f"Raw Data API Download URL: {data_url}")
+        info = response_json.get("result", {})
+        log.debug(f"Raw Data API Response: {info}")
+
+        data_url = info.get("download_url")
+
+        if not data_url:
+            log.error("Raw data api no download_url returned. Skipping.")
+            return None
 
         if not data_url.endswith(".zip"):
             return data_url

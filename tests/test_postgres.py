@@ -20,8 +20,10 @@
 
 import logging
 import os
+import time
 
 import geojson
+import requests
 
 import osm_rawdata as rw
 from osm_rawdata.postgres import PostgresClient
@@ -41,9 +43,36 @@ def test_data_extract():
     assert len(data_extract.get("features")) == 16
 
 
-# def test_data_extract_flatgeobuf():
-#     pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
-#     aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
-#     boundary = geojson.load(aoi_file)
-#     data_extract = pg.execQuery(boundary)
-#     assert len(data_extract.get("features")) == 16
+def test_data_extract_with_clipping():
+    # Sleep 5 seconds to reduce API load
+    time.sleep(5)
+
+    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
+    aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
+    boundary = geojson.load(aoi_file)
+    data_extract = pg.execQuery(boundary, clip_to_aoi=True)
+    print(data_extract)
+    assert len(data_extract.get("features")) == 13
+
+
+def test_data_extract_flatgeobuf():
+    # Sleep 5 seconds to reduce API load
+    time.sleep(5)
+
+    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
+    aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
+    boundary = geojson.load(aoi_file)
+    extract_url = pg.execQuery(
+        boundary,
+        extra_params={
+            "fileName": "osm-rawdata-test-extract",
+            "outputType": "fgb",
+            "bind_zip": False,
+        },
+    )
+    assert extract_url.startswith("http")
+
+    with requests.head(extract_url) as response:
+        assert response.status_code == 200
+        assert response.headers["Content-Type"] == "binary/octet-stream"
+        assert response.headers["Content-Length"] == "8376"

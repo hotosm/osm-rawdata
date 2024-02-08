@@ -36,8 +36,9 @@ import psycopg2
 import requests
 from geojson import Feature, FeatureCollection
 from geojson import Polygon as GeojsonPolygon
-from shapely import wkt
+from shapely import to_geojson, wkt
 from shapely.geometry import Polygon, shape
+from shapely.ops import unary_union
 
 # Find the other files for this project
 import osm_rawdata as rw
@@ -167,6 +168,7 @@ class DatabaseAccess(object):
         config: QueryConfig,
         boundary: GeojsonPolygon,
         allgeom: bool = False,
+        extra_params: dict = {},
     ) -> str:
         """Generate a JSON file used for remote access to raw-data-api.
 
@@ -176,6 +178,8 @@ class DatabaseAccess(object):
             config (QueryConfig): The config data from the query config file
             boundary (GeojsonPolygon): The boundary polygon
             allgeom (bool): Whether to return centroids or all the full geometry
+                TODO this is not implemented.
+            extra_params (dict): Extra parameters to include in JSON config root.
 
         Returns:
             str: The stringified JSON data.
@@ -186,6 +190,7 @@ class DatabaseAccess(object):
             "filters": self._get_filters(config),
             "centroid": config.config.get("centroid", False),
             "attributes": self._get_attributes(config),
+            **extra_params,
         }
         return json.dumps(json_data)
 
@@ -461,15 +466,16 @@ class DatabaseAccess(object):
     def queryRemote(
         self,
         query: str,
-    ):
+    ) -> Optional[Union[str, dict]]:
         """This queries a remote postgres database using the FastAPI
         backend to the HOT Export Tool.
 
         Args:
-            query (str): The JSON query to execute
+            query (str): The JSON query to execute.
 
         Returns:
-            (FeatureCollection): the results of the query
+            (str, FeatureCollection): either the data URL, or extracted geojson.
+                Returns None on failure.
         """
         # Send the request to raw data api
         result = None
@@ -505,10 +511,10 @@ class DatabaseAccess(object):
         elapsed_time = 0
 
         while elapsed_time < max_polling_duration:
-            result = self.session.get(task_query_url, headers=self.headers)
-            result_json = result.json()
+            response = self.session.get(task_query_url, headers=self.headers)
+            response_json = response.json()
 
-            if result_json.get("status") == "PENDING":
+            if response_json.get("status") == "PENDING":
                 # Adjust polling frequency after the first minute
                 if elapsed_time > 60:
                     polling_interval = 10  # Poll every 10 seconds after the first minute
@@ -518,7 +524,7 @@ class DatabaseAccess(object):
                 time.sleep(polling_interval)
                 elapsed_time += polling_interval
 
-            elif result_json.get("status") == "SUCCESS":
+            elif response_json.get("status") == "SUCCESS":
                 break
 
         else:
@@ -617,31 +623,41 @@ class PostgresClient(DatabaseAccess):
 
     def execQuery(
         self,
-        boundary: FeatureCollection,
+        boundary: Union[FeatureCollection, Feature, dict],
         customsql: str = None,
         allgeom: bool = True,
+        clip_to_aoi: bool = False,
+        extra_params: dict = {},
     ):
         """This class generates executes the query using a local postgres
         database, or a remote one that uses the Underpass schema.
 
         Args:
-            boundary (FeatureCollection): The boundary polygon
-            customsql (str): Don't create the SQL, use the one supplied
-            allgeom (bool): Whether to return centroids or all the full geometry
+            boundary (FeatureCollection, Feature, dict): The boundary polygon.
+            customsql (str): Don't create the SQL, use the one supplied.
+            allgeom (bool): Whether to return centroids or all the full geometry.
+            clip_to_aoi (bool): Remove polygons with centroids outside AOI.
 
         Returns:
                 query (FeatureCollection): the json
         """
-        log.info("Extracting features from Postgres...")
+        log.info("Parsing AOI geojson for data extract")
 
-        if "features" in boundary:
-            # FIXME: ideally this should support multipolygons
-            poly = boundary["features"][0]["geometry"]
+        if (geom_type := boundary.get("type")) == "FeatureCollection":
+            # Convert each feature into a Shapely geometry
+            geometries = [shape(feature.get("geometry")) for feature in boundary.get("features", [])]
+            merged_geom = unary_union(geometries)
+        elif geom_type == "Feature":
+            merged_geom = shape(boundary.get("geometry"))
         else:
-            poly = boundary["geometry"]
-        wkt = shape(poly)
+            merged_geom = shape(boundary)
+
+        # Convert the merged geoms to a single Polygon GeoJSON using convex hull
+        aoi_polygon = json.loads(to_geojson(merged_geom.convex_hull))
+        aoi_shape = shape(aoi_polygon)
 
         if self.dbshell:
+            log.info("Extracting features from Postgres...")
             if not customsql:
                 sql = self.createSQL(self.qc, allgeom)
             else:
@@ -649,14 +665,36 @@ class PostgresClient(DatabaseAccess):
             alldata = list()
             for query in sql:
                 # print(query)
-                result = self.queryLocal(query, allgeom, wkt)
+                result = self.queryLocal(query, allgeom, aoi_shape)
                 if len(result) > 0:
                     alldata += result["features"]
             collection = FeatureCollection(alldata)
         else:
-            json_config = self.createJson(self.qc, poly, allgeom)
+            log.info("Extracting features via remote call...")
+            json_config = self.createJson(self.qc, aoi_polygon, allgeom, extra_params)
             collection = self.queryRemote(json_config)
-        return collection
+            # bind_zip=False, data is not zipped, return URL directly
+            if not json.loads(json_config).get("bind_zip", True):
+                return collection
+
+        if not collection:
+            log.warning("No data returned for data extract")
+            return collection
+
+        if not clip_to_aoi:
+            return collection
+
+        # TODO this may be implemented in raw-data-api directly
+        # TODO https://github.com/hotosm/raw-data-api/issues/207
+        # TODO remove code here if complete
+        # Only return polygons with centroids inside AOI
+        filtered_features = []
+        for feature in collection["features"]:
+            if (geom := feature.get("geometry")).get("type") == "Polygon":
+                if aoi_shape.contains(shape(shape(geom).centroid)):
+                    filtered_features.append(feature)
+
+        return FeatureCollection(filtered_features)
 
 
 def main():

@@ -517,7 +517,7 @@ class DatabaseAccess(object):
 
             log.debug(f"Current status: {response_status}")
 
-            if response_status == "PENDING":
+            if response_status == "STARTED" or response_status == "PENDING":
                 # Adjust polling frequency after the first minute
                 if elapsed_time > 60:
                     polling_interval = 10  # Poll every 10 seconds after the first minute

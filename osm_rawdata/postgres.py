@@ -29,13 +29,16 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 from sys import argv
+from typing import Optional, Union
 
 import geojson
 import psycopg2
 import requests
-from geojson import Feature, FeatureCollection, Polygon
-from shapely import wkt
+from geojson import Feature, FeatureCollection
+from geojson import Polygon as GeojsonPolygon
+from shapely import to_geojson, wkt
 from shapely.geometry import Polygon, shape
+from shapely.ops import unary_union
 
 # Find the other files for this project
 import osm_rawdata as rw
@@ -132,7 +135,7 @@ class DatabaseAccess(object):
 
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            self.url = os.getenv("UNDERPASS_API_URL", "https://raw-data-api0.hotosm.org/v1")
+            self.url = os.getenv("UNDERPASS_API_URL", "https://api-prod.raw-data.hotosm.org/v1")
             self.headers = {"accept": "application/json", "Content-Type": "application/json"}
         else:
             log.info(f"Opening database connection to: {self.uri['dbname']}")
@@ -156,90 +159,112 @@ class DatabaseAccess(object):
                 log.error(f"Couldn't connect to database: {e}")
 
     def __del__(self):
-        """
-        Close any open connections to Postgres.
-        """
-        self.dbshell.close()
+        """Close any open connections to Postgres."""
+        if self.dbshell:
+            self.dbshell.close()
 
     def createJson(
         self,
         config: QueryConfig,
-        boundary: Polygon,
+        boundary: GeojsonPolygon,
         allgeom: bool = False,
-    ):
-        """This class generates a JSON file, which is used for remote access
-        to an OSM raw database using the Underpass schema.
+        extra_params: dict = {},
+    ) -> str:
+        """Generate a JSON file used for remote access to raw-data-api.
+
+        Uses the Underpass schema.
 
         Args:
             config (QueryConfig): The config data from the query config file
-            boundary (Polygon): The boundary polygon
+            boundary (GeojsonPolygon): The boundary polygon
             allgeom (bool): Whether to return centroids or all the full geometry
+                TODO this is not implemented.
+            extra_params (dict): Extra parameters to include in JSON config root.
 
         Returns:
-            (FeatureCollection): the json data
+            str: The stringified JSON data.
         """
-        feature = dict()
-        feature["geometry"] = boundary
+        json_data = {
+            "geometry": boundary,
+            "geometryType": self._get_geometry_types(config),
+            "filters": self._get_filters(config),
+            "centroid": config.config.get("centroid", False),
+            "attributes": self._get_attributes(config),
+            **extra_params,
+        }
+        return json.dumps(json_data)
 
-        filters = dict()
-        filters["tags"] = dict()
-        # filters["tags"]["all_geometry"] = dict()
+    def _get_geometry_types(self, config: QueryConfig) -> Union[list, None]:
+        """Get the geometry types based on the QueryConfig.
 
-        # This only effects the output file
-        geometrytype = list()
-        # for table in config.config['tables']:
-        if len(config.config["select"]["nodes"]) > 0 or len(config.config["where"]["nodes"]) > 0:
-            geometrytype.append("point")
-        if len(config.config["select"]["ways_line"]) > 0 or len(config.config["where"]["ways_line"]) > 0:
-            geometrytype.append("line")
-        if len(config.config["select"]["ways_poly"]) > 0 or len(config.config["where"]["ways_poly"]) > 0:
-            geometrytype.append("polygon")
-        feature["geometryType"] = geometrytype
+        Args:
+            config (QueryConfig): The query configuration.
 
+        Returns:
+            Union[list, None]: A list of geometry types or None if empty.
+        """
+        geometry_types = []
+        for table, geometry_type in {"nodes": "point", "ways_line": "line", "ways_poly": "polygon"}.items():
+            if config.config["select"][table] or config.config["where"][table]:
+                geometry_types.append(geometry_type)
+        return geometry_types or None
+
+    def _get_filters(self, config: QueryConfig) -> dict:
+        """Get the filters based on the QueryConfig.
+
+        Args:
+            config (QueryConfig): The query configuration.
+
+        Returns:
+            dict: The filters.
+        """
+        # Initialize the filters dictionary with empty join_or and join_and
+        # dictionaries for point, line, and polygon
+        filters = {
+            "tags": {
+                "point": {"join_or": {}, "join_and": {}},
+                "line": {"join_or": {}, "join_and": {}},
+                "polygon": {"join_or": {}, "join_and": {}},
+            }
+        }
+        # Mapping between database table names and geometry types
         tables = {"nodes": "point", "ways_poly": "polygon", "ways_line": "line"}
-        # The database tables to query
-        # if tags exists, then only query those fields
-        join_or = {
-            "point": [],
-            "polygon": [],
-            "line": [],
-        }
-        join_and = {
-            "point": [],
-            "polygon": [],
-            "line": [],
-        }
-        filters["tags"] = {
-            "point": {"join_or": {}, "join_and": {}},
-            "polygon": {"join_or": {}, "join_and": {}},
-            "line": {"join_or": {}, "join_and": {}},
-        }
-        for table in config.config["where"].keys():
-            for item in config.config["where"][table]:
-                key = list(item.keys())[0]
-                if item["op"] == "or":
-                    join_or[tables[table]].append(key)
-                if item["op"] == "and":
-                    join_and[tables[table]].append(key)
-                if "not null" in item.get(key, []):
+
+        # Iterate through the conditions in the 'where' clause of the query configuration
+        for table, conditions in config.config["where"].items():
+            for condition in conditions:
+                # Access the 'op' field in the condition
+                key, option = list(condition.items())[0]
+                if option == "or" or option == "and":
+                    # If the option is 'or' or 'and', add the condition to the respective join dictionary
+                    filters["tags"][tables[table]][f"join_{option}"][key] = []
+                elif "not null" in option:
+                    # If the condition indicates 'not null', add it to both join_or and join_and with empty values
                     filters["tags"][tables[table]]["join_or"][key] = []
                     filters["tags"][tables[table]]["join_and"][key] = []
                 else:
-                    filters["tags"][tables[table]]["join_or"][key] = item[key]
-                    filters["tags"][tables[table]]["join_and"][key] = item[key]
-        feature.update({"filters": filters})
+                    # Otherwise, set the condition value in both join_or and join_and dictionaries
+                    filters["tags"][tables[table]]["join_or"][key] = option
+                    filters["tags"][tables[table]]["join_and"][key] = option
 
-        attributes = list()
+        return filters
+
+    def _get_attributes(self, config: QueryConfig) -> list:
+        """Get the attributes based on the QueryConfig.
+
+        Args:
+            config (QueryConfig): The query configuration.
+
+        Returns:
+            list: The list of attributes.
+        """
+        attributes = []
         for table, data in config.config["select"].items():
             for value in data:
                 [[k, v]] = value.items()
                 if k not in attributes:
                     attributes.append(k)
-
-        # Whether to dump centroids or polygons
-        if "centroid" in config.config:
-            feature["centroid"] = true
-        return json.dumps(feature)
+        return attributes
 
     def createSQL(
         self,
@@ -289,12 +314,14 @@ class DatabaseAccess(object):
             jor = ""
             for entry in join_or:
                 for k, v in entry.items():
-                    if type(v[0]) == list:
-                        # It's an array of values
-                        value = str(v[0])
-                        any = f"ANY(ARRAY{value})"
-                        jor += f"tags->>'{k}'={any} OR "
-                        continue
+                    # Check if v is a non-empty list
+                    if isinstance(v, list) and v:
+                        if isinstance(v[0], list):
+                            # It's an array of values
+                            value = str(v[0])
+                            any = f"ANY(ARRAY{value})"
+                            jor += f"tags->>'{k}'={any} OR "
+                            continue
                     if k == "op":
                         continue
                     if len(v) == 1:
@@ -458,42 +485,98 @@ class DatabaseAccess(object):
 
     def queryRemote(
         self,
-        query: str = None,
-    ):
+        query: str,
+    ) -> Optional[Union[str, dict]]:
         """This queries a remote postgres database using the FastAPI
         backend to the HOT Export Tool.
 
         Args:
-            query (str): The JSON query to execute
+            query (str): The JSON query to execute.
 
         Returns:
-            (FeatureCollection): the results of the query
+            (str, FeatureCollection): either the data URL, or extracted geojson.
+                Returns None on failure.
         """
-        url = f"{self.url}/snapshot/"
-        result = self.session.post(url, data=query, headers=self.headers)
-        if result.status_code != 200:
-            log.error(f"{result.json()['detail'][0]['msg']}")
-            return None
-        task_id = result.json()["task_id"]
-        newurl = f"{self.url}/tasks/status/{task_id}"
-        while True:
-            result = self.session.get(newurl, headers=self.headers)
-            if result.json()["status"] == "PENDING":
-                log.debug("Retrying...")
-                time.sleep(1)
-            elif result.json()["status"] == "SUCCESS":
-                break
-        zip = result.json()["result"]["download_url"]
-        result = self.session.get(zip, headers=self.headers)
-        fp = BytesIO(result.content)
-        zfp = zipfile.ZipFile(fp, "r")
-        zfp.extract("Export.geojson", "/tmp/")
-        # Now take that taskid and hit /tasks/status url with get
-        data = zfp.read("Export.geojson")
-        os.remove("/tmp/Export.geojson")
-        return json.loads(data)
+        # Send the request to raw data api
+        result = None
 
-    #   return zfp.read("Export.geojson")
+        url = f"{self.url}/snapshot/"
+        try:
+            result = self.session.post(url, data=query, headers=self.headers)
+            result.raise_for_status()
+        except requests.exceptions.HTTPError:
+            if result is not None:
+                error_dict = result.json()
+                error_dict["status_code"] = result.status_code
+                log.error(f"Failed to get extract from Raw Data API: {error_dict}")
+                return error_dict
+            else:
+                log.error("Failed to make request to raw data API")
+
+        if result is None:
+            log.error("Raw Data API did not return a response. Skipping.")
+            return None
+
+        if result.status_code != 200:
+            error_message = result.json().get("detail")[0].get("msg")
+            log.error(f"{error_message}")
+            return None
+
+        task_id = result.json().get("task_id")
+        task_query_url = f"{self.url}/tasks/status/{task_id}"
+        log.debug(f"Raw Data API Query URL: {task_query_url}")
+
+        polling_interval = 2  # Initial polling interval in seconds
+        max_polling_duration = 600  # Maximum duration for polling in seconds (10 minutes)
+        elapsed_time = 0
+
+        while elapsed_time < max_polling_duration:
+            response = self.session.get(task_query_url, headers=self.headers)
+            response_json = response.json()
+            response_status = response_json.get("status")
+
+            log.debug(f"Current status: {response_status}")
+
+            if response_status == "STARTED" or response_status == "PENDING":
+                # Adjust polling frequency after the first minute
+                if elapsed_time > 60:
+                    polling_interval = 10  # Poll every 10 seconds after the first minute
+
+                # Wait before polling again
+                log.debug(f"Waiting {polling_interval} seconds before polling API again...")
+                time.sleep(polling_interval)
+                elapsed_time += polling_interval
+
+            elif response_status == "SUCCESS":
+                break
+
+        else:
+            # Maximum polling duration reached
+            log.error(f"{max_polling_duration} second elapsed. Aborting data extract.")
+            return None
+
+        if not isinstance(response_json, dict):
+            log.error(f"Raw data api response in wrong format: {response_json}")
+            return None
+
+        info = response_json.get("result", {})
+        log.debug(f"Raw Data API Response: {info}")
+
+        data_url = info.get("download_url")
+
+        if not data_url:
+            log.error("Raw data api no download_url returned. Skipping.")
+            return None
+
+        if not data_url.endswith(".zip"):
+            return data_url
+
+        with self.session.get(data_url, headers=self.headers) as response:
+            buffer = BytesIO(response.content)
+            with zipfile.ZipFile(buffer, "r") as zipped_file:
+                with zipped_file.open("Export.geojson") as geojson_file:
+                    geojson_data = json.load(geojson_file)
+        return geojson_data
 
 
 class PostgresClient(DatabaseAccess):
@@ -502,30 +585,57 @@ class PostgresClient(DatabaseAccess):
     def __init__(
         self,
         uri: str,
-        config: str = None,
+        config: Optional[Union[str, BytesIO]] = None,
+        auth_token: Optional[str] = None,
         # output: str = None
     ):
         """This is a client for a postgres database.
 
         Args:
-            uri (str): The URI string for the database connection
-            config (str): The filespec for the query config file
+            uri (str): The URI string for the database connection.
+            config (str, BytesIO): The query config file path or BytesIO object.
+                Currently only YAML format is accepted if BytesIO is passed.
 
         Returns:
             (bool): Whether the data base connection was sucessful
         """
         super().__init__(uri)
         self.qc = QueryConfig()
+
+        # Optional authentication
+        if auth_token:
+            self.headers["access-token"] = auth_token
+
         if config:
-            # Load the config file for the SQL query
-            path = Path(config)
-            if path.suffix == ".json":
-                self.qc.parseJson(config)
-            elif path.suffix == ".yaml":
-                self.qc.parseYaml(config)
+            # filespec string passed
+            if isinstance(config, str):
+                path = Path(config)
+                if not path.exists():
+                    raise FileNotFoundError(f"Config file does not exist {config}")
+                with open(config, "rb") as config_file:
+                    config_data = BytesIO(config_file.read())
+                if path.suffix == ".json":
+                    config_type = "json"
+                elif path.suffix == ".yaml":
+                    config_type = "yaml"
+                else:
+                    log.error(f"Unsupported file format: {config}")
+                    raise ValueError(f"Invalid config {config}")
+
+            # BytesIO object passed
+            elif isinstance(config, BytesIO):
+                config_data = config
+                config_type = "yaml"
+
             else:
-                log.error(f"{path} is an unsupported file format!")
-                quit()
+                log.warning(f"Config input is invalid for PostgresClient: {config}")
+                raise ValueError(f"Invalid config {config}")
+
+            # Parse the config
+            if config_type == "json":
+                self.qc.parseJson(config_data)
+            elif config_type == "yaml":
+                self.qc.parseYaml(config_data)
 
     def createDB(self, dburi: uriParser):
         """Setup the postgres database connection.
@@ -551,31 +661,41 @@ class PostgresClient(DatabaseAccess):
 
     def execQuery(
         self,
-        boundary: FeatureCollection,
+        boundary: Union[FeatureCollection, Feature, dict],
         customsql: str = None,
         allgeom: bool = True,
+        clip_to_aoi: bool = False,
+        extra_params: dict = {},
     ):
         """This class generates executes the query using a local postgres
         database, or a remote one that uses the Underpass schema.
 
         Args:
-            boundary (FeatureCollection): The boundary polygon
-            customsql (str): Don't create the SQL, use the one supplied
-            allgeom (bool): Whether to return centroids or all the full geometry
+            boundary (FeatureCollection, Feature, dict): The boundary polygon.
+            customsql (str): Don't create the SQL, use the one supplied.
+            allgeom (bool): Whether to return centroids or all the full geometry.
+            clip_to_aoi (bool): Remove polygons with centroids outside AOI.
 
         Returns:
                 query (FeatureCollection): the json
         """
-        log.info("Extracting features from Postgres...")
+        log.info("Parsing AOI geojson for data extract")
 
-        if "features" in boundary:
-            # FIXME: ideally this should support multipolygons
-            poly = boundary["features"][0]["geometry"]
+        if (geom_type := boundary.get("type")) == "FeatureCollection":
+            # Convert each feature into a Shapely geometry
+            geometries = [shape(feature.get("geometry")) for feature in boundary.get("features", [])]
+            merged_geom = unary_union(geometries)
+        elif geom_type == "Feature":
+            merged_geom = shape(boundary.get("geometry"))
         else:
-            poly = boundary["geometry"]
-        wkt = shape(poly)
+            merged_geom = shape(boundary)
+
+        # Convert the merged geoms to a single Polygon GeoJSON using convex hull
+        aoi_polygon = json.loads(to_geojson(merged_geom.convex_hull))
+        aoi_shape = shape(aoi_polygon)
 
         if self.dbshell:
+            log.info("Extracting features from Postgres...")
             if not customsql:
                 sql = self.createSQL(self.qc, allgeom)
             else:
@@ -583,14 +703,36 @@ class PostgresClient(DatabaseAccess):
             alldata = list()
             for query in sql:
                 # print(query)
-                result = self.queryLocal(query, allgeom, wkt)
+                result = self.queryLocal(query, allgeom, aoi_shape)
                 if len(result) > 0:
                     alldata += result["features"]
             collection = FeatureCollection(alldata)
         else:
-            request = self.createJson(self.qc, poly, allgeom)
-            collection = self.queryRemote(request)
-        return collection
+            log.info("Extracting features via remote call...")
+            json_config = self.createJson(self.qc, aoi_polygon, allgeom, extra_params)
+            collection = self.queryRemote(json_config)
+            # bind_zip=False, data is not zipped, return URL directly
+            if not json.loads(json_config).get("bind_zip", True):
+                return collection
+
+        if not collection:
+            log.warning("No data returned for data extract")
+            return collection
+
+        if not clip_to_aoi:
+            return collection
+
+        # TODO this may be implemented in raw-data-api directly
+        # TODO https://github.com/hotosm/raw-data-api/issues/207
+        # TODO remove code here if complete
+        # Only return polygons with centroids inside AOI
+        filtered_features = []
+        for feature in collection["features"]:
+            if (geom := feature.get("geometry")).get("type") == "Polygon":
+                if aoi_shape.contains(shape(shape(geom).centroid)):
+                    filtered_features.append(feature)
+
+        return FeatureCollection(filtered_features)
 
 
 def main():

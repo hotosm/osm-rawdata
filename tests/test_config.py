@@ -2,7 +2,7 @@
 
 # Copyright (c) 2023 Humanitarian OpenStreetMap Team
 #
-# This file is part of osm_fieldwork.
+# This file is part of osm_rawdata.
 #
 #     This is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -15,10 +15,11 @@
 #     GNU General Public License for more details.
 #
 #     You should have received a copy of the GNU General Public License
-#     along with osm_fieldwork.  If not, see <https:#www.gnu.org/licenses/>.
+#     along with osm_rawdata.  If not, see <https:#www.gnu.org/licenses/>.
 #
 
 import os
+from io import BytesIO
 
 #
 # The JSON data files came from the raw-data-api project, and are currently
@@ -81,9 +82,40 @@ def test_formats():
     assert qc.config["outputType"] == "shp" and qc.config["fileName"] == "Pokhara_all_features"
 
 
+def test_bytesio():
+    qc = QueryConfig()
+    with open(f"{rootdir}/formats.json", "rb") as file:
+        json_obj = BytesIO(file.read())
+    qc.parseJson(json_obj)
+    assert qc.config["outputType"] == "shp" and qc.config["fileName"] == "Pokhara_all_features"
+
+
 def test_yaml_no_joins():
     qc = QueryConfig()
     qc.parseYaml(f"{rootdir}/buildings_no_join.yaml")
+
+    selected = qc.config["select"]
+    assert len(selected.keys()) == 3
+    assert len(list(selected.values())[0]) == 4
+
+    where = qc.config["where"]
+    assert len(where.keys()) == 3
+
+    nodes = list(where.values())[0]
+    assert len(nodes) == 4
+
+    building = nodes[0]["building"]
+    assert building == ["yes"]
+
+    op = nodes[0]["op"]
+    assert op == "or"
+
+
+def test_yaml_no_joins_bytesio():
+    qc = QueryConfig()
+    with open(f"{rootdir}/buildings_no_join.yaml", "rb") as file:
+        yaml_obj = BytesIO(file.read())
+    qc.parseYaml(yaml_obj)
 
     selected = qc.config["select"]
     assert len(selected.keys()) == 3

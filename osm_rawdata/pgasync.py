@@ -20,6 +20,7 @@
 # <info@hotosm.org>
 
 import argparse
+import asyncio
 import json
 import logging
 import os
@@ -28,13 +29,11 @@ import time
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from sys import argv
 from urllib.parse import urlparse
+
+import asyncpg
 import geojson
 import requests
-import asyncio
-import asyncpg
-from asyncpg import exceptions
 from geojson import Feature, FeatureCollection, Polygon
 from shapely import wkt
 from shapely.geometry import Polygon, shape
@@ -48,6 +47,7 @@ rootdir = rw.__path__[0]
 # Instantiate logger
 log = logging.getLogger(__name__)
 
+
 class DatabaseAccess(object):
     def __init__(self):
         """This is a class to setup a database connection."""
@@ -55,32 +55,33 @@ class DatabaseAccess(object):
         self.dburi = None
         self.qc = None
 
-    async def connect(self,
-            dburi: str,
-            ):
+    async def connect(
+        self,
+        dburi: str,
+    ):
         self.dburi = dict()
         uri = urlparse(dburi)
         if not uri.username:
-            self.dburi['dbuser'] = os.getenv("PGUSER", default=None)
-            if not self.dburi['dbuser']:
-                log.error(f"You must specify the user name in the database URI, or set PGUSER")
+            self.dburi["dbuser"] = os.getenv("PGUSER", default=None)
+            if not self.dburi["dbuser"]:
+                log.error("You must specify the user name in the database URI, or set PGUSER")
         else:
-            self.dburi['dbuser'] = uri.username
+            self.dburi["dbuser"] = uri.username
         if not uri.password:
-            self.dburi['dbpass'] = os.getenv("PGPASSWORD", default=None)
-            if not self.dburi['dbpass']:
-                log.error(f"You must specify the user password in the database URI, or set PGPASSWORD")
+            self.dburi["dbpass"] = os.getenv("PGPASSWORD", default=None)
+            if not self.dburi["dbpass"]:
+                log.error("You must specify the user password in the database URI, or set PGPASSWORD")
         else:
-            self.dburi['dbpass'] = uri.password
+            self.dburi["dbpass"] = uri.password
         if not uri.hostname:
-            self.dburi['dbhost'] = os.getenv("PGHOST", default="localhost")
+            self.dburi["dbhost"] = os.getenv("PGHOST", default="localhost")
         else:
-            self.dburi['dbhost'] = uri.hostname
+            self.dburi["dbhost"] = uri.hostname
 
-        slash = uri.path.find('/')
-        self.dburi['dbname'] = uri.path[slash + 1:]
+        slash = uri.path.find("/")
+        self.dburi["dbname"] = uri.path[slash + 1 :]
         connect = f"postgres://{self.dburi['dbuser']}:{ self.dburi['dbpass']}@{self.dburi['dbhost']}/{self.dburi['dbname']}"
-            
+
         if self.dburi["dbname"] == "underpass":
             # Authentication data
             # self.auth = HTTPBasicAuth(self.user, self.passwd)
@@ -292,11 +293,11 @@ class DatabaseAccess(object):
 
         return True
 
-    async def execute(self,
-                sql: str,
-                ):
-        """
-        Execute a raw SQL query and return the results.
+    async def execute(
+        self,
+        sql: str,
+    ):
+        """Execute a raw SQL query and return the results.
 
         Args:
             sql (str): The SQL to execute
@@ -442,17 +443,18 @@ class PostgresClient(DatabaseAccess):
         # output: str = None
     ):
         """This is a client for a postgres database.
+
         Returns:
             (PostgresClient): An instance of this class
         """
         super().__init__()
         self.qc = None
 
-    async def loadConfig(self,
-                config: str,
-                ):
-        """
-        Load the JSON or YAML config file that defines the SQL query
+    async def loadConfig(
+        self,
+        config: str,
+    ):
+        """Load the JSON or YAML config file that defines the SQL query
 
         Args:
             config (str): The filespec for the query config file
@@ -535,6 +537,7 @@ class PostgresClient(DatabaseAccess):
             collection = await self.queryRemote(request)
         return collection
 
+
 async def main():
     """This main function lets this class be run standalone by a bash script."""
     parser = argparse.ArgumentParser(
@@ -602,9 +605,9 @@ to define the are to be covered in the extract. Optionally a data file can be us
 
         log.debug(f"Wrote {args.outfile}")
 
+
 if __name__ == "__main__":
     """This is just a hook so this file can be run standalone during development."""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(main())
-

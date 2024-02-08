@@ -2,7 +2,7 @@
 
 # Copyright (c) 2023 Humanitarian OpenStreetMap Team
 #
-# This file is part of osm_fieldwork.
+# This file is part of osm_rawdata.
 #
 #     This is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 #     GNU General Public License for more details.
 #
 #     You should have received a copy of the GNU General Public License
-#     along with osm_fieldwork.  If not, see <https:#www.gnu.org/licenses/>.
+#     along with osm_rawdata.  If not, see <https:#www.gnu.org/licenses/>.
 #
 
 import os

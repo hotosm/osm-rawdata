@@ -29,6 +29,7 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 from sys import argv
+from typing import Optional, Union
 
 import geojson
 import psycopg2
@@ -132,7 +133,7 @@ class DatabaseAccess(object):
 
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            self.url = os.getenv("UNDERPASS_API_URL", "https://raw-data-api0.hotosm.org/v1")
+            self.url = os.getenv("UNDERPASS_API_URL", "https://api-prod.raw-data.hotosm.org/v1")
             self.headers = {"accept": "application/json", "Content-Type": "application/json"}
         else:
             log.info(f"Opening database connection to: {self.uri['dbname']}")
@@ -156,10 +157,9 @@ class DatabaseAccess(object):
                 log.error(f"Couldn't connect to database: {e}")
 
     def __del__(self):
-        """
-        Close any open connections to Postgres.
-        """
-        self.dbshell.close()
+        """Close any open connections to Postgres."""
+        if self.dbshell:
+            self.dbshell.close()
 
     def createJson(
         self,
@@ -289,12 +289,14 @@ class DatabaseAccess(object):
             jor = ""
             for entry in join_or:
                 for k, v in entry.items():
-                    if type(v[0]) == list:
-                        # It's an array of values
-                        value = str(v[0])
-                        any = f"ANY(ARRAY{value})"
-                        jor += f"tags->>'{k}'={any} OR "
-                        continue
+                    # Check if v is a non-empty list
+                    if isinstance(v, list) and v:
+                        if isinstance(v[0], list):
+                            # It's an array of values
+                            value = str(v[0])
+                            any = f"ANY(ARRAY{value})"
+                            jor += f"tags->>'{k}'={any} OR "
+                            continue
                     if k == "op":
                         continue
                     if len(v) == 1:
@@ -438,7 +440,7 @@ class DatabaseAccess(object):
 
     def queryRemote(
         self,
-        query: str = None,
+        query: str,
     ):
         """This queries a remote postgres database using the FastAPI
         backend to the HOT Export Tool.
@@ -449,22 +451,63 @@ class DatabaseAccess(object):
         Returns:
             (FeatureCollection): the results of the query
         """
+        # Send the request to raw data api
+        result = None
+
         url = f"{self.url}/snapshot/"
-        result = self.session.post(url, data=query, headers=self.headers)
-        if result.status_code != 200:
-            log.error(f"{result.json()['detail'][0]['msg']}")
+        try:
+            result = self.session.post(url, data=query, headers=self.headers)
+            result.raise_for_status()
+        except requests.exceptions.HTTPError:
+            if result is not None:
+                error_dict = result.json()
+                error_dict["status_code"] = result.status_code
+                log.error(f"Failed to get extract from Raw Data API: {error_dict}")
+                return error_dict
+            else:
+                log.error("Failed to make request to raw data API")
+
+        if result is None:
+            log.error("Raw Data API did not return a response. Skipping.")
             return None
-        task_id = result.json()["task_id"]
-        newurl = f"{self.url}/tasks/status/{task_id}"
-        while True:
-            result = self.session.get(newurl, headers=self.headers)
-            if result.json()["status"] == "PENDING":
-                log.debug("Retrying...")
-                time.sleep(1)
-            elif result.json()["status"] == "SUCCESS":
+
+        if result.status_code != 200:
+            error_message = result.json().get("detail")[0].get("msg")
+            log.error(f"{error_message}")
+            return None
+
+        task_id = result.json().get("task_id")
+        task_query_url = f"{self.url}/tasks/status/{task_id}"
+        log.debug(f"Raw Data API Query URL: {task_query_url}")
+
+        polling_interval = 2  # Initial polling interval in seconds
+        max_polling_duration = 600  # Maximum duration for polling in seconds (10 minutes)
+        elapsed_time = 0
+
+        while elapsed_time < max_polling_duration:
+            result = self.session.get(task_query_url, headers=self.headers)
+            result_json = result.json()
+
+            if result_json.get("status") == "PENDING":
+                # Adjust polling frequency after the first minute
+                if elapsed_time > 60:
+                    polling_interval = 10  # Poll every 10 seconds after the first minute
+
+                # Wait before polling again
+                log.debug(f"Waiting {polling_interval} seconds before polling API again...")
+                time.sleep(polling_interval)
+                elapsed_time += polling_interval
+
+            elif result_json.get("status") == "SUCCESS":
                 break
-        zip = result.json()["result"]["download_url"]
-        result = self.session.get(zip, headers=self.headers)
+
+        else:
+            # Maximum polling duration reached
+            log.error(f"{max_polling_duration} second elapsed. Aborting data extract.")
+            return None
+
+        zip_url = result_json["result"]["download_url"]
+        result = self.session.get(zip_url, headers=self.headers)
         fp = BytesIO(result.content)
         zfp = zipfile.ZipFile(fp, "r")
         zfp.extract("Export.geojson", "/tmp/")
@@ -473,8 +516,6 @@ class DatabaseAccess(object):
         os.remove("/tmp/Export.geojson")
         return json.loads(data)
 
-    #   return zfp.read("Export.geojson")
-
 
 class PostgresClient(DatabaseAccess):
     """Class to handle SQL queries for the categories."""
@@ -482,30 +523,52 @@ class PostgresClient(DatabaseAccess):
     def __init__(
         self,
         uri: str,
-        config: str = None,
+        config: Optional[Union[str, BytesIO]] = None,
         # output: str = None
     ):
         """This is a client for a postgres database.
 
         Args:
-            uri (str): The URI string for the database connection
-            config (str): The filespec for the query config file
+            uri (str): The URI string for the database connection.
+            config (str, BytesIO): The query config file path or BytesIO object.
+                Currently only YAML format is accepted if BytesIO is passed.
 
         Returns:
             (bool): Whether the data base connection was sucessful
         """
         super().__init__(uri)
         self.qc = QueryConfig()
+
         if config:
-            # Load the config file for the SQL query
-            path = Path(config)
-            if path.suffix == ".json":
-                self.qc.parseJson(config)
-            elif path.suffix == ".yaml":
-                self.qc.parseYaml(config)
+            # filespec string passed
+            if isinstance(config, str):
+                path = Path(config)
+                if not path.exists():
+                    raise FileNotFoundError(f"Config file does not exist {config}")
+                with open(config, "rb") as config_file:
+                    config_data = BytesIO(config_file.read())
+                if path.suffix == ".json":
+                    config_type = "json"
+                elif path.suffix == ".yaml":
+                    config_type = "yaml"
+                else:
+                    log.error(f"Unsupported file format: {config}")
+                    raise ValueError(f"Invalid config {config}")
+
+            # BytesIO object passed
+            elif isinstance(config, BytesIO):
+                config_data = config
+                config_type = "yaml"
+
             else:
-                log.error(f"{path} is an unsupported file format!")
-                quit()
+                log.warning(f"Config input is invalid for PostgresClient: {config}")
+                raise ValueError(f"Invalid config {config}")
+
+            # Parse the config
+            if config_type == "json":
+                self.qc.parseJson(config_data)
+            elif config_type == "yaml":
+                self.qc.parseYaml(config_data)
 
     def createDB(self, dburi: uriParser):
         """Setup the postgres database connection.
@@ -568,8 +631,8 @@ class PostgresClient(DatabaseAccess):
                     alldata += result["features"]
             collection = FeatureCollection(alldata)
         else:
-            request = self.createJson(self.qc, poly, allgeom)
-            collection = self.queryRemote(request)
+            json_config = self.createJson(self.qc, poly, allgeom)
+            collection = self.queryRemote(json_config)
         return collection
 
 

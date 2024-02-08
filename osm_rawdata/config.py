@@ -185,8 +185,7 @@ class QueryConfig(object):
                     self.config["select"][table].append({tag: []})
 
     def parseJson(self, config: Union[str, BytesIO]):
-        """Parse the JSON format config file used by the raw-data-api
-        and export tool.
+        """Parse the JSON format config file used by the raw-data-api and export tool.
 
         Args:
             config (str, BytesIO): the file or BytesIO object to read.
@@ -194,6 +193,18 @@ class QueryConfig(object):
         Returns:
             config (dict): the config data
         """
+
+        # Helper function to convert geometry names
+        def convert_geometry(geom):
+            if geom == "point":
+                return "nodes"
+            elif geom == "line":
+                return "ways_line"
+            elif geom == "polygon":
+                return "ways_poly"
+            return geom
+
+        # Check the type of config and load data accordingly
         if isinstance(config, str):
             with open(config, "r") as config_file:
                 data = json.load(config_file)
@@ -203,51 +214,48 @@ class QueryConfig(object):
             log.error(f"Unsupported config format: {config}")
             raise ValueError(f"Invalid config {config}")
 
-        # Get the geometry
+        # Extract geometry
         self.geometry = shape(data["geometry"])
+
+        # Iterate through each key-value pair in the flattened dictionary
         for key, value in flatdict.FlatDict(data).items():
             keys = key.split(":")
-            # print(keys)
-            # print(f"\t{value}")
-            # We already have the geometry
-            if key[:8] == "geometry":
+            # Skip the keys related to geometry
+            if key.startswith("geometry"):
                 continue
+            # If it's a top-level key, directly update self.config
             if len(keys) == 1:
-                self.config.update({key: value})
+                self.config[key] = value
                 continue
-            # keys[0] is currently always 'filters'
-            # keys[1] is currently 'tags' for the WHERE clause,
-            # of attributes for the SELECT
-            geom = keys[2]
-            # tag = keys[4]
-            # Get the geometry
-            if geom == "point":
-                geom = "nodes"
-            elif geom == "line":
-                geom = "ways_line"
-            elif geom == "polygon":
-                geom = "ways_poly"
-            if keys[1] == "attributes":
-                for v1 in value:
-                    if geom == "all_geometry":
-                        self.config["select"]["nodes"].append({v1: {}})
-                        self.config["select"]["ways_line"].append({v1: {}})
-                        self.config["select"]["ways_poly"].append({v1: {}})
-                        self.config["tables"].append("nodes")
-                        self.config["tables"].append("ways_poly")
-                        self.config["tables"].append("ways_line")
+
+            # Extract meaningful parts from the key
+            section, subsection = keys[:2]
+            geom_type = keys[2] if len(keys) > 2 else None
+            tag_type = keys[3] if len(keys) > 3 else None
+            tag_name = keys[4] if len(keys) > 4 else None
+
+            # Convert geometry type to meaningful names
+            geom_type = convert_geometry(geom_type)
+
+            if subsection == "attributes":
+                # For attributes, update select fields and tables
+                for attribute_name in value:
+                    if geom_type == "all_geometry":
+                        for geometry_type in ["nodes", "ways_line", "ways_poly"]:
+                            self.config["select"][geometry_type].append({attribute_name: {}})
+                            self.config["tables"].append(geometry_type)
                     else:
-                        self.config["tables"].append(geom)
-                        self.config["select"][geom].append({v1: {}})
-            if keys[1] == "tags":
-                newtag = {keys[4]: value}
-                newtag["op"] = keys[3][5:]
-                if geom == "all_geometry":
-                    self.config["where"]["nodes"].append(newtag)
-                    self.config["where"]["ways_poly"].append(newtag)
-                    self.config["where"]["ways_line"].append(newtag)
+                        self.config["select"][geom_type].append({attribute_name: {}})
+                        self.config["tables"].append(geom_type)
+            elif subsection == "tags":
+                # For tags, update where fields
+                option = tag_type[5:] if tag_type else None
+                new_tag = {tag_name: value, "op": option}
+                if geom_type == "all_geometry":
+                    for geometry_type in ["nodes", "ways_line", "ways_poly"]:
+                        self.config["where"][geometry_type].append(new_tag)
                 else:
-                    self.config["where"][geom].append(newtag)
+                    self.config["where"][geom_type].append(new_tag)
 
         return self.config
 

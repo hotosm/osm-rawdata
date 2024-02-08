@@ -34,7 +34,8 @@ from typing import Optional, Union
 import geojson
 import psycopg2
 import requests
-from geojson import Feature, FeatureCollection, Polygon
+from geojson import Feature, FeatureCollection
+from geojson import Polygon as GeojsonPolygon
 from shapely import wkt
 from shapely.geometry import Polygon, shape
 
@@ -164,82 +165,101 @@ class DatabaseAccess(object):
     def createJson(
         self,
         config: QueryConfig,
-        boundary: Polygon,
+        boundary: GeojsonPolygon,
         allgeom: bool = False,
-    ):
-        """This class generates a JSON file, which is used for remote access
-        to an OSM raw database using the Underpass schema.
+    ) -> str:
+        """Generate a JSON file used for remote access to raw-data-api.
+
+        Uses the Underpass schema.
 
         Args:
             config (QueryConfig): The config data from the query config file
-            boundary (Polygon): The boundary polygon
+            boundary (GeojsonPolygon): The boundary polygon
             allgeom (bool): Whether to return centroids or all the full geometry
 
         Returns:
-            (FeatureCollection): the json data
+            str: The stringified JSON data.
         """
-        feature = dict()
-        feature["geometry"] = boundary
+        json_data = {
+            "geometry": boundary,
+            "geometryType": self._get_geometry_types(config),
+            "filters": self._get_filters(config),
+            "centroid": config.config.get("centroid", False),
+            "attributes": self._get_attributes(config),
+        }
+        return json.dumps(json_data)
 
-        filters = dict()
-        filters["tags"] = dict()
-        # filters["tags"]["all_geometry"] = dict()
+    def _get_geometry_types(self, config: QueryConfig) -> Union[list, None]:
+        """Get the geometry types based on the QueryConfig.
 
-        # This only effects the output file
-        geometrytype = list()
-        # for table in config.config['tables']:
-        if len(config.config["select"]["nodes"]) > 0 or len(config.config["where"]["nodes"]) > 0:
-            geometrytype.append("point")
-        if len(config.config["select"]["ways_line"]) > 0 or len(config.config["where"]["ways_line"]) > 0:
-            geometrytype.append("line")
-        if len(config.config["select"]["ways_poly"]) > 0 or len(config.config["where"]["ways_poly"]) > 0:
-            geometrytype.append("polygon")
-        feature["geometryType"] = geometrytype
+        Args:
+            config (QueryConfig): The query configuration.
 
+        Returns:
+            Union[list, None]: A list of geometry types or None if empty.
+        """
+        geometry_types = []
+        for table, geometry_type in {"nodes": "point", "ways_line": "line", "ways_poly": "polygon"}.items():
+            if config.config["select"][table] or config.config["where"][table]:
+                geometry_types.append(geometry_type)
+        return geometry_types or None
+
+    def _get_filters(self, config: QueryConfig) -> dict:
+        """Get the filters based on the QueryConfig.
+
+        Args:
+            config (QueryConfig): The query configuration.
+
+        Returns:
+            dict: The filters.
+        """
+        # Initialize the filters dictionary with empty join_or and join_and
+        # dictionaries for point, line, and polygon
+        filters = {
+            "tags": {
+                "point": {"join_or": {}, "join_and": {}},
+                "line": {"join_or": {}, "join_and": {}},
+                "polygon": {"join_or": {}, "join_and": {}},
+            }
+        }
+        # Mapping between database table names and geometry types
         tables = {"nodes": "point", "ways_poly": "polygon", "ways_line": "line"}
-        # The database tables to query
-        # if tags exists, then only query those fields
-        join_or = {
-            "point": [],
-            "polygon": [],
-            "line": [],
-        }
-        join_and = {
-            "point": [],
-            "polygon": [],
-            "line": [],
-        }
-        filters["tags"] = {
-            "point": {"join_or": {}, "join_and": {}},
-            "polygon": {"join_or": {}, "join_and": {}},
-            "line": {"join_or": {}, "join_and": {}},
-        }
-        for table in config.config["where"].keys():
-            for item in config.config["where"][table]:
-                key = list(item.keys())[0]
-                if item["op"] == "or":
-                    join_or[tables[table]].append(key)
-                if item["op"] == "and":
-                    join_and[tables[table]].append(key)
-                if "not null" in item.get(key, []):
+
+        # Iterate through the conditions in the 'where' clause of the query configuration
+        for table, conditions in config.config["where"].items():
+            for condition in conditions:
+                # Access the 'op' field in the condition
+                key, option = list(condition.items())[0]
+                if option == "or" or option == "and":
+                    # If the option is 'or' or 'and', add the condition to the respective join dictionary
+                    filters["tags"][tables[table]][f"join_{option}"][key] = []
+                elif "not null" in option:
+                    # If the condition indicates 'not null', add it to both join_or and join_and with empty values
                     filters["tags"][tables[table]]["join_or"][key] = []
                     filters["tags"][tables[table]]["join_and"][key] = []
                 else:
-                    filters["tags"][tables[table]]["join_or"][key] = item[key]
-                    filters["tags"][tables[table]]["join_and"][key] = item[key]
-        feature.update({"filters": filters})
+                    # Otherwise, set the condition value in both join_or and join_and dictionaries
+                    filters["tags"][tables[table]]["join_or"][key] = option
+                    filters["tags"][tables[table]]["join_and"][key] = option
 
-        attributes = list()
+        return filters
+
+    def _get_attributes(self, config: QueryConfig) -> list:
+        """Get the attributes based on the QueryConfig.
+
+        Args:
+            config (QueryConfig): The query configuration.
+
+        Returns:
+            list: The list of attributes.
+        """
+        attributes = []
         for table, data in config.config["select"].items():
             for value in data:
                 [[k, v]] = value.items()
                 if k not in attributes:
                     attributes.append(k)
-
-        # Whether to dump centroids or polygons
-        if "centroid" in config.config:
-            feature["centroid"] = true
-        return json.dumps(feature)
+        return attributes
 
     def createSQL(
         self,

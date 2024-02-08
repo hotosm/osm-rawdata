@@ -90,7 +90,7 @@ class DatabaseAccess(object):
             self.url = os.getenv("UNDERPASS_API_URL", "https://raw-data-api0.hotosm.org/v1")
             self.headers = {"accept": "application/json", "Content-Type": "application/json"}
         else:
-            log.debug(f"Connecting with: {connect}")
+            # log.debug(f"Connecting with: {connect}")
             try:
                 self.pg = await asyncpg.connect(connect)
                 if self.pg.is_closed():
@@ -304,6 +304,7 @@ class DatabaseAccess(object):
         Returns:
             (list): The results of the query
         """
+
         # print(sql)
         try:
             result = await self.pg.fetch(sql)

@@ -563,6 +563,7 @@ class PostgresClient(DatabaseAccess):
         self,
         uri: str,
         config: Optional[Union[str, BytesIO]] = None,
+        auth_token: Optional[str] = None,
         # output: str = None
     ):
         """This is a client for a postgres database.
@@ -577,6 +578,10 @@ class PostgresClient(DatabaseAccess):
         """
         super().__init__(uri)
         self.qc = QueryConfig()
+
+        # Optional authentication
+        if auth_token:
+            self.headers["access-token"] = auth_token
 
         if config:
             # filespec string passed

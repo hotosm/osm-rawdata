@@ -18,12 +18,15 @@
 #     along with osm_rawdata.  If not, see <https:#www.gnu.org/licenses/>.
 #
 
+import logging
 import os
 
 import geojson
 
 import osm_rawdata as rw
 from osm_rawdata.postgres import PostgresClient
+
+log = logging.getLogger(__name__)
 
 rootdir = rw.__path__[0]
 if os.path.basename(rootdir) == "osm_rawdata":

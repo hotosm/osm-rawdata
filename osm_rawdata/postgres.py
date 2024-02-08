@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2022 Humanitarian OpenStreetMap Team
+# Copyright (c) 2022, 2023, 2024 Humanitarian OpenStreetMap Team
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -380,6 +380,26 @@ class DatabaseAccess(object):
 
         return True
 
+    def execute(self,
+                sql: str,
+                ):
+        """
+        Execute a raw SQL query and return the results.
+
+        Args:
+            sql (str): The SQL to execute
+
+        Returns:
+            (list): The results of the query
+        """
+        # print(sql)
+        try:
+            result = self.dbcursor.execute(sql)
+            return self.dbcursor.fetchall()
+        except:
+            log.error(f"Couldn't execute query! {sql}")
+            return list()
+
     def queryLocal(
         self,
         query: str,
@@ -421,7 +441,7 @@ class DatabaseAccess(object):
         self.dbcursor.execute(query)
         try:
             result = self.dbcursor.fetchall()
-            log.debug("SQL Query returned %d records" % len(result))
+            # log.debug("SQL Query returned %d records" % len(result))
         except:
             return FeatureCollection(features)
 

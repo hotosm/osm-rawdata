@@ -532,6 +532,10 @@ class DatabaseAccess(object):
             log.error(f"{max_polling_duration} second elapsed. Aborting data extract.")
             return None
 
+        if not isinstance(response_json, dict):
+            log.error(f"Raw data api response in wrong format: {response_json}")
+            return None
+
         data_url = response_json.get("result", {}).get("download_url")
         log.debug(f"Raw Data API Download URL: {data_url}")
 

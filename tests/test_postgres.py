@@ -69,6 +69,7 @@ def test_data_extract_flatgeobuf():
             "outputType": "fgb",
             "bind_zip": False,
         },
+        # param options: https://hotosm.github.io/raw-data-api/api/endpoints/#rawdatacurrentparams
     )
     assert extract_url.startswith("http")
 

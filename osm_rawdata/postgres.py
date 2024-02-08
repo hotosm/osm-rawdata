@@ -513,8 +513,11 @@ class DatabaseAccess(object):
         while elapsed_time < max_polling_duration:
             response = self.session.get(task_query_url, headers=self.headers)
             response_json = response.json()
+            response_status = response_json.get("status")
 
-            if response_json.get("status") == "PENDING":
+            log.debug(f"Current status: {response_status}")
+
+            if response_status == "PENDING":
                 # Adjust polling frequency after the first minute
                 if elapsed_time > 60:
                     polling_interval = 10  # Poll every 10 seconds after the first minute
@@ -524,7 +527,7 @@ class DatabaseAccess(object):
                 time.sleep(polling_interval)
                 elapsed_time += polling_interval
 
-            elif response_json.get("status") == "SUCCESS":
+            elif response_status == "SUCCESS":
                 break
 
         else:

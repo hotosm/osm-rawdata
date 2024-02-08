@@ -706,11 +706,15 @@ class PostgresClient(DatabaseAccess):
         # TODO https://github.com/hotosm/raw-data-api/issues/207
         # TODO remove code here if complete
         # Only return polygons with centroids inside AOI
+        log.debug("clip_to_aoi set, filtering Polygons with centroid outside AOI")
         filtered_features = []
         for feature in collection["features"]:
             if (geom := feature.get("geometry")).get("type") == "Polygon":
                 if aoi_shape.contains(shape(shape(geom).centroid)):
                     filtered_features.append(feature)
+            else:
+                # Append if not polygon
+                filtered_features.append(feature)
 
         return FeatureCollection(filtered_features)
 

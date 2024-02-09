@@ -17,6 +17,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with osm_rawdata.  If not, see <https:#www.gnu.org/licenses/>.
 #
+"""Tests for data extract generation."""
 
 import logging
 import os
@@ -36,6 +37,7 @@ if os.path.basename(rootdir) == "osm_rawdata":
 
 
 def test_data_extract():
+    """Test data extract works with zipped geojson default."""
     pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
     aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
     boundary = geojson.load(aoi_file)
@@ -44,20 +46,24 @@ def test_data_extract():
 
 
 def test_data_extract_with_clipping():
-    # Sleep 5 seconds to reduce API load
-    time.sleep(5)
+    """Clipping to only extract polygons with centroids inside AOI.
+
+    This only extracts on parking spot and a building.
+    """
+    # Sleep 3 seconds to reduce API load
+    time.sleep(3)
 
     pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
-    aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
+    aoi_file = open(f"{rootdir}/AOI_small_clipped.geojson", "r")
     boundary = geojson.load(aoi_file)
     data_extract = pg.execQuery(boundary, clip_to_aoi=True)
-    print(data_extract)
-    assert len(data_extract.get("features")) == 13
+    assert len(data_extract.get("features")) == 2
 
 
 def test_data_extract_flatgeobuf():
-    # Sleep 5 seconds to reduce API load
-    time.sleep(5)
+    """Test bind_zip=False flatgeobuf for direct data streaming."""
+    # Sleep 3 seconds to reduce API load
+    time.sleep(3)
 
     pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
     aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")

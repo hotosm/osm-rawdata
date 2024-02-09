@@ -377,11 +377,11 @@ class DatabaseAccess(object):
 
         return True
 
-    def execute(self,
-                sql: str,
-                ):
-        """
-        Execute a raw SQL query and return the results.
+    def execute(
+        self,
+        sql: str,
+    ):
+        """Execute a raw SQL query and return the results.
 
         Args:
             sql (str): The SQL to execute

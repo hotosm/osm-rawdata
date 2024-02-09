@@ -130,9 +130,6 @@ class DatabaseAccess(object):
         self.dbcursor = None
         self.uri = uriParser(dburi)
         if self.uri["dbname"] == "underpass":
-            # Authentication data
-            # self.auth = HTTPBasicAuth(self.user, self.passwd)
-
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
             self.url = os.getenv("UNDERPASS_API_URL", "https://api-prod.raw-data.hotosm.org/v1")

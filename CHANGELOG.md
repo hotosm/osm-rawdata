@@ -1,3 +1,14 @@
+## 0.2.1 (2024-02-09)
+
+### Fix
+
+- improve robustness of raw data api polling checks
+
+### Refactor
+
+- formatting for pre-commit
+- cleanup http basic auth reference in DatabaseAccess
+
 ## 0.2.0 (2024-02-09)
 
 ### Feat

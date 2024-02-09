@@ -531,10 +531,12 @@ class DatabaseAccess(object):
             response = self.session.get(task_query_url, headers=self.headers)
             response_json = response.json()
             response_status = response_json.get("status")
+            task_info = response_json.get("result", {})
 
             log.debug(f"Current status: {response_status}")
 
-            if response_status == "STARTED" or response_status == "PENDING":
+            # response_status options: STARTED, PENDING, SUCCESS
+            if response_status != "SUCCESS" or isinstance(task_info, str) or not task_info.get("download_url"):
                 # Adjust polling frequency after the first minute
                 if elapsed_time > 60:
                     polling_interval = 10  # Poll every 10 seconds after the first minute
@@ -544,7 +546,8 @@ class DatabaseAccess(object):
                 time.sleep(polling_interval)
                 elapsed_time += polling_interval
 
-            elif response_status == "SUCCESS":
+            else:
+                # response_status="SUCCESS" and download_url present
                 break
 
         else:
@@ -552,14 +555,8 @@ class DatabaseAccess(object):
             log.error(f"{max_polling_duration} second elapsed. Aborting data extract.")
             return None
 
-        if not isinstance(response_json, dict):
-            log.error(f"Raw data api response in wrong format: {response_json}")
-            return None
-
-        info = response_json.get("result", {})
-        log.debug(f"Raw Data API Response: {info}")
-
-        data_url = info.get("download_url")
+        log.debug(f"Raw Data API Response: {task_info}")
+        data_url = task_info.get("download_url")
 
         if not data_url:
             log.error("Raw data api no download_url returned. Skipping.")
@@ -731,7 +728,7 @@ class PostgresClient(DatabaseAccess):
         # TODO https://github.com/hotosm/raw-data-api/issues/207
         # TODO remove code here if complete
         # Only return polygons with centroids inside AOI
-        log.debug("clip_to_aoi set, filtering Polygons with centroid outside AOI")
+        log.debug("'clip_to_aoi' set, filtering Polygons with centroid outside AOI")
         filtered_features = []
         for feature in collection["features"]:
             if (geom := feature.get("geometry")).get("type") == "Polygon":

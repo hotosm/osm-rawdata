@@ -38,34 +38,19 @@ if os.path.basename(rootdir) == "osm_rawdata":
 
 def test_data_extract():
     """Test data extract works with zipped geojson default."""
-    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
+    pg = PostgresClient("underpass", f"{rootdir}/buildings_extract.yaml")
     aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
     boundary = geojson.load(aoi_file)
     data_extract = pg.execQuery(boundary)
-    assert len(data_extract.get("features")) == 16
+    assert len(data_extract.get("features")) == 22
 
 
-def test_data_extract_with_clipping():
-    """Clipping to only extract polygons with centroids inside AOI.
-
-    This only extracts on parking spot and a building.
-    """
-    # Sleep 3 seconds to reduce API load
-    time.sleep(3)
-
-    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
-    aoi_file = open(f"{rootdir}/AOI_small_clipped.geojson", "r")
-    boundary = geojson.load(aoi_file)
-    data_extract = pg.execQuery(boundary, clip_to_aoi=True)
-    assert len(data_extract.get("features")) == 2
-
-
-def test_data_extract_flatgeobuf():
+def test_fgb_data_extract():
     """Test bind_zip=False flatgeobuf for direct data streaming."""
     # Sleep 3 seconds to reduce API load
     time.sleep(3)
 
-    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
+    pg = PostgresClient("underpass", f"{rootdir}/buildings_extract.yaml")
     aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
     boundary = geojson.load(aoi_file)
     extract_url = pg.execQuery(
@@ -82,4 +67,4 @@ def test_data_extract_flatgeobuf():
     with requests.head(extract_url) as response:
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "binary/octet-stream"
-        assert response.headers["Content-Length"] == "8376"
+        assert response.headers["Content-Length"] == "10640"

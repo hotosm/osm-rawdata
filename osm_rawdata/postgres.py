@@ -665,7 +665,6 @@ class PostgresClient(DatabaseAccess):
         boundary: Union[FeatureCollection, Feature, dict],
         customsql: str = None,
         allgeom: bool = True,
-        clip_to_aoi: bool = False,
         extra_params: dict = {},
     ):
         """This class generates executes the query using a local postgres
@@ -675,7 +674,6 @@ class PostgresClient(DatabaseAccess):
             boundary (FeatureCollection, Feature, dict): The boundary polygon.
             customsql (str): Don't create the SQL, use the one supplied.
             allgeom (bool): Whether to return centroids or all the full geometry.
-            clip_to_aoi (bool): Remove polygons with centroids outside AOI.
 
         Returns:
                 query (FeatureCollection): the json
@@ -718,27 +716,8 @@ class PostgresClient(DatabaseAccess):
 
         if not collection:
             log.warning("No data returned for data extract")
-            return collection
 
-        # If clip flag not set, or not geojson dict, return BytesIO data
-        if not clip_to_aoi or not isinstance(collection, dict):
-            return collection
-
-        # TODO this may be implemented in raw-data-api directly
-        # TODO https://github.com/hotosm/raw-data-api/issues/207
-        # TODO remove code here if complete
-        # Only return polygons with centroids inside AOI
-        log.debug("'clip_to_aoi' set, filtering Polygons with centroid outside AOI")
-        filtered_features = []
-        for feature in collection["features"]:
-            if (geom := feature.get("geometry")).get("type") == "Polygon":
-                if aoi_shape.contains(shape(shape(geom).centroid)):
-                    filtered_features.append(feature)
-            else:
-                # Append if not polygon
-                filtered_features.append(feature)
-
-        return FeatureCollection(filtered_features)
+        return collection
 
 
 def main():

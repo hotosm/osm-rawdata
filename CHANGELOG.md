@@ -1,3 +1,33 @@
+## 0.2.0 (2024-02-09)
+
+### Feat
+
+- allow passing extra param to execQuery (for direct URL access) (#14)
+- allow passing bytesio object as json/yaml config (#13)
+- update queryRemote polling interval logic
+- allow passing of BytesIO config to PostgresClient
+- allow parsing of bytesio json/yaml config
+
+### Fix
+
+- Add execute() method
+- Drop debug statement
+- return bytesio data if not geojson and zipped
+- only clip_to_aoi for Polygons, retail other geoms
+- New version of the PostgresClient to use asyncpg iinstead of psycopg2
+- improve handling for queryExec + reduce poll to 2s
+- update underpass default url
+- incorrect handling of dbshell.close() if not exists
+- allow parsing of bytesio json/yaml config
+- json parsing if index out of range
+- Add destructor to close postgres connection, handle list of tag values insted of just "not null"
+- Make less verbose
+- reverse logic when testing for a closed connection
+
+### Refactor
+
+- add error log if max polling duration reached
+
 ## 0.1.7 (2023-12-05)
 
 ### Fix

@@ -293,6 +293,58 @@ class DatabaseAccess(object):
 
         return True
 
+    async def getRecordCount(self,
+                             table: str,
+                             column: str = 'id',
+                            ):
+        # FIXME: we should cleanup this mess between US and British spelling
+        if table == 'organizations':
+            newtable = "organisations"
+        else:
+            newtable = table
+        sql = f"SELECT reltuples::bigint AS count FROM  pg_class WHERE relname='{newtable}';"
+        result = await self.execute(sql)
+        count = 0
+        if len(result) == 0:
+            sql = f"SELECT COUNT({column}) AS count FROM {newtable};"
+            # print(sql)
+            result = await self.execute(sql)
+        else:
+            count = result[0].get('count')
+
+        log.debug(f"There are {count} records in {table}")
+        return count
+
+    async def getPage(self,
+                        chunk: int,
+                        table: str,
+                      ):
+        """Return a page of data.
+
+        Args:
+            start (int): The ID of the first record
+            end (int): The ID of the last record
+
+        Returns:
+            (list): The results of the query
+        """
+        result = list()
+        async with self.pg.transaction():
+            cur = await self.pg.cursor(f'SELECT * FROM {table}')
+            result = await cur.fetch(chunk)
+            await cur.forward(chunk)
+            # FIXME: the hard way
+            # sql = f"DECLARE c CURSOR WITH HOLD FOR SELECT row_to_json({table}) AS row FROM {table} WHERE id BETWEEN {start} AND {end} ORDER BY id; COMMIT"
+        # sql = f"START TRANSACTION;DECLARE c CURSOR WITH HOLD FOR SELECT row_to_json({table}) AS row FROM {table} WHERE id BETWEEN {start} AND {end} ORDER BY id; COMMIT"
+            #result = await self.pg.execute(sql)
+            #sql = f"FETCH {end} FROM c;"
+            # sql = f"FETCH {end} FROM c; CLOSE c"
+            # result = await self.pg.execute(sql)
+            #result = await self.pg.fetch(sql)
+            # sql = f"MOVE ABSOLUTE {start} in c;
+
+        return result
+
     async def execute(
         self,
         sql: str,
@@ -305,14 +357,14 @@ class DatabaseAccess(object):
         Returns:
             (list): The results of the query
         """
-
         # print(sql)
-        try:
-            result = await self.pg.fetch(sql)
-            return result
-        except:
-            log.error(f"Couldn't execute query! {sql}")
-            return list()
+        async with self.pg.transaction():
+            try:
+                result = await self.pg.fetch(sql)
+                return result
+            except Exception as e:
+                log.error(f"Couldn't execute query! {e}\n{sql}")
+                return list()
 
     async def queryLocal(
         self,

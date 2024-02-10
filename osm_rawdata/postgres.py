@@ -130,9 +130,6 @@ class DatabaseAccess(object):
         self.dbcursor = None
         self.uri = uriParser(dburi)
         if self.uri["dbname"] == "underpass":
-            # Authentication data
-            # self.auth = HTTPBasicAuth(self.user, self.passwd)
-
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
             self.url = os.getenv("UNDERPASS_API_URL", "https://api-prod.raw-data.hotosm.org/v1")
@@ -380,11 +377,11 @@ class DatabaseAccess(object):
 
         return True
 
-    def execute(self,
-                sql: str,
-                ):
-        """
-        Execute a raw SQL query and return the results.
+    def execute(
+        self,
+        sql: str,
+    ):
+        """Execute a raw SQL query and return the results.
 
         Args:
             sql (str): The SQL to execute
@@ -486,7 +483,7 @@ class DatabaseAccess(object):
     def queryRemote(
         self,
         query: str,
-    ) -> Optional[Union[str, dict]]:
+    ) -> Optional[Union[str, dict, BytesIO]]:
         """This queries a remote postgres database using the FastAPI
         backend to the HOT Export Tool.
 
@@ -494,8 +491,8 @@ class DatabaseAccess(object):
             query (str): The JSON query to execute.
 
         Returns:
-            (str, FeatureCollection): either the data URL, or extracted geojson.
-                Returns None on failure.
+            (str, FeatureCollection, BytesIO): either the data URL if bind_zip=False,
+                extracted geojson, else BytesIO file. Returns None on failure.
         """
         # Send the request to raw data api
         result = None
@@ -534,10 +531,12 @@ class DatabaseAccess(object):
             response = self.session.get(task_query_url, headers=self.headers)
             response_json = response.json()
             response_status = response_json.get("status")
+            task_info = response_json.get("result", {})
 
             log.debug(f"Current status: {response_status}")
 
-            if response_status == "STARTED" or response_status == "PENDING":
+            # response_status options: STARTED, PENDING, SUCCESS
+            if response_status != "SUCCESS" or isinstance(task_info, str) or not task_info.get("download_url"):
                 # Adjust polling frequency after the first minute
                 if elapsed_time > 60:
                     polling_interval = 10  # Poll every 10 seconds after the first minute
@@ -547,7 +546,8 @@ class DatabaseAccess(object):
                 time.sleep(polling_interval)
                 elapsed_time += polling_interval
 
-            elif response_status == "SUCCESS":
+            else:
+                # response_status="SUCCESS" and download_url present
                 break
 
         else:
@@ -555,14 +555,8 @@ class DatabaseAccess(object):
             log.error(f"{max_polling_duration} second elapsed. Aborting data extract.")
             return None
 
-        if not isinstance(response_json, dict):
-            log.error(f"Raw data api response in wrong format: {response_json}")
-            return None
-
-        info = response_json.get("result", {})
-        log.debug(f"Raw Data API Response: {info}")
-
-        data_url = info.get("download_url")
+        log.debug(f"Raw Data API Response: {task_info}")
+        data_url = task_info.get("download_url")
 
         if not data_url:
             log.error("Raw data api no download_url returned. Skipping.")
@@ -571,12 +565,19 @@ class DatabaseAccess(object):
         if not data_url.endswith(".zip"):
             return data_url
 
+        # Extract filename is set, else use Export.geojson
+        query_dict = json.loads(query)
+        file_type = query_dict.get("outputType", "geojson")
+        filename = f"{query_dict.get('fileName', 'Export')}.{file_type}"
+        # Get zip file and extract
         with self.session.get(data_url, headers=self.headers) as response:
             buffer = BytesIO(response.content)
             with zipfile.ZipFile(buffer, "r") as zipped_file:
-                with zipped_file.open("Export.geojson") as geojson_file:
-                    geojson_data = json.load(geojson_file)
-        return geojson_data
+                with zipped_file.open(filename) as extracted_data:
+                    if file_type == "geojson":
+                        return json.load(extracted_data)
+                    else:
+                        return BytesIO(extracted_data.read())
 
 
 class PostgresClient(DatabaseAccess):
@@ -664,7 +665,6 @@ class PostgresClient(DatabaseAccess):
         boundary: Union[FeatureCollection, Feature, dict],
         customsql: str = None,
         allgeom: bool = True,
-        clip_to_aoi: bool = False,
         extra_params: dict = {},
     ):
         """This class generates executes the query using a local postgres
@@ -674,7 +674,6 @@ class PostgresClient(DatabaseAccess):
             boundary (FeatureCollection, Feature, dict): The boundary polygon.
             customsql (str): Don't create the SQL, use the one supplied.
             allgeom (bool): Whether to return centroids or all the full geometry.
-            clip_to_aoi (bool): Remove polygons with centroids outside AOI.
 
         Returns:
                 query (FeatureCollection): the json
@@ -717,22 +716,8 @@ class PostgresClient(DatabaseAccess):
 
         if not collection:
             log.warning("No data returned for data extract")
-            return collection
 
-        if not clip_to_aoi:
-            return collection
-
-        # TODO this may be implemented in raw-data-api directly
-        # TODO https://github.com/hotosm/raw-data-api/issues/207
-        # TODO remove code here if complete
-        # Only return polygons with centroids inside AOI
-        filtered_features = []
-        for feature in collection["features"]:
-            if (geom := feature.get("geometry")).get("type") == "Polygon":
-                if aoi_shape.contains(shape(shape(geom).centroid)):
-                    filtered_features.append(feature)
-
-        return FeatureCollection(filtered_features)
+        return collection
 
 
 def main():

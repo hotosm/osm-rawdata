@@ -17,6 +17,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with osm_rawdata.  If not, see <https:#www.gnu.org/licenses/>.
 #
+"""Tests for data extract generation."""
 
 import logging
 import os
@@ -36,30 +37,20 @@ if os.path.basename(rootdir) == "osm_rawdata":
 
 
 def test_data_extract():
-    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
+    """Test data extract works with zipped geojson default."""
+    pg = PostgresClient("underpass", f"{rootdir}/buildings_extract.yaml")
     aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
     boundary = geojson.load(aoi_file)
     data_extract = pg.execQuery(boundary)
-    assert len(data_extract.get("features")) == 16
+    assert len(data_extract.get("features")) == 22
 
 
-def test_data_extract_with_clipping():
-    # Sleep 5 seconds to reduce API load
-    time.sleep(5)
+def test_fgb_data_extract():
+    """Test bind_zip=False flatgeobuf for direct data streaming."""
+    # Sleep 3 seconds to reduce API load
+    time.sleep(3)
 
-    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
-    aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
-    boundary = geojson.load(aoi_file)
-    data_extract = pg.execQuery(boundary, clip_to_aoi=True)
-    print(data_extract)
-    assert len(data_extract.get("features")) == 13
-
-
-def test_data_extract_flatgeobuf():
-    # Sleep 5 seconds to reduce API load
-    time.sleep(5)
-
-    pg = PostgresClient("underpass", f"{rootdir}/buildings.yaml")
+    pg = PostgresClient("underpass", f"{rootdir}/buildings_extract.yaml")
     aoi_file = open(f"{rootdir}/AOI_small.geojson", "r")
     boundary = geojson.load(aoi_file)
     extract_url = pg.execQuery(
@@ -76,4 +67,4 @@ def test_data_extract_flatgeobuf():
     with requests.head(extract_url) as response:
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "binary/octet-stream"
-        assert response.headers["Content-Length"] == "8376"
+        assert response.headers["Content-Length"] == "10640"

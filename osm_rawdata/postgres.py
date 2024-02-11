@@ -662,7 +662,7 @@ class PostgresClient(DatabaseAccess):
 
     def execQuery(
         self,
-        boundary: Union[FeatureCollection, Feature, dict],
+        boundary: Union[FeatureCollection, Feature, dict, str],
         customsql: str = None,
         allgeom: bool = True,
         extra_params: dict = {},
@@ -671,7 +671,7 @@ class PostgresClient(DatabaseAccess):
         database, or a remote one that uses the Underpass schema.
 
         Args:
-            boundary (FeatureCollection, Feature, dict): The boundary polygon.
+            boundary (FeatureCollection, Feature, dict, str): The boundary polygon.
             customsql (str): Don't create the SQL, use the one supplied.
             allgeom (bool): Whether to return centroids or all the full geometry.
 
@@ -679,6 +679,10 @@ class PostgresClient(DatabaseAccess):
                 query (FeatureCollection): the json
         """
         log.info("Parsing AOI geojson for data extract")
+
+        # Parse JSON string type
+        if isinstance(boundary, str):
+            boundary = json.loads(boundary)
 
         if (geom_type := boundary.get("type")) == "FeatureCollection":
             # Convert each feature into a Shapely geometry

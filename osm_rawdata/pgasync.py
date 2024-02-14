@@ -293,12 +293,13 @@ class DatabaseAccess(object):
 
         return True
 
-    async def getRecordCount(self,
-                             table: str,
-                             column: str = 'id',
-                            ):
+    async def getRecordCount(
+        self,
+        table: str,
+        column: str = "id",
+    ):
         # FIXME: we should cleanup this mess between US and British spelling
-        if table == 'organizations':
+        if table == "organizations":
             newtable = "organisations"
         else:
             newtable = table
@@ -310,15 +311,16 @@ class DatabaseAccess(object):
             # print(sql)
             result = await self.execute(sql)
         else:
-            count = result[0].get('count')
+            count = result[0].get("count")
 
         log.debug(f"There are {count} records in {table}")
         return count
 
-    async def getPage(self,
-                        chunk: int,
-                        table: str,
-                      ):
+    async def getPage(
+        self,
+        chunk: int,
+        table: str,
+    ):
         """Return a page of data.
 
         Args:
@@ -330,18 +332,18 @@ class DatabaseAccess(object):
         """
         result = list()
         async with self.pg.transaction():
-            cur = await self.pg.cursor(f'SELECT * FROM {table}')
+            cur = await self.pg.cursor(f"SELECT * FROM {table}")
             result = await cur.fetch(chunk)
             await cur.forward(chunk)
             # FIXME: the hard way
             # sql = f"DECLARE c CURSOR WITH HOLD FOR SELECT row_to_json({table}) AS row FROM {table} WHERE id BETWEEN {start} AND {end} ORDER BY id; COMMIT"
         # sql = f"START TRANSACTION;DECLARE c CURSOR WITH HOLD FOR SELECT row_to_json({table}) AS row FROM {table} WHERE id BETWEEN {start} AND {end} ORDER BY id; COMMIT"
-            #result = await self.pg.execute(sql)
-            #sql = f"FETCH {end} FROM c;"
-            # sql = f"FETCH {end} FROM c; CLOSE c"
-            # result = await self.pg.execute(sql)
-            #result = await self.pg.fetch(sql)
-            # sql = f"MOVE ABSOLUTE {start} in c;
+        # result = await self.pg.execute(sql)
+        # sql = f"FETCH {end} FROM c;"
+        # sql = f"FETCH {end} FROM c; CLOSE c"
+        # result = await self.pg.execute(sql)
+        # result = await self.pg.fetch(sql)
+        # sql = f"MOVE ABSOLUTE {start} in c;
 
         return result
 

@@ -1,0 +1,7 @@
+select:
+where:
+  tags:
+    - join_or:
+        - building:
+          highway:
+          waterway:

@@ -19,14 +19,17 @@
 #
 """Tests for data extract generation."""
 
+import json
 import logging
 import os
 import time
+from io import BytesIO
 
 import geojson
 import requests
 
 import osm_rawdata as rw
+from osm_rawdata.config import QueryConfig
 from osm_rawdata.postgres import PostgresClient
 
 log = logging.getLogger(__name__)
@@ -68,3 +71,45 @@ def test_fgb_data_extract():
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "binary/octet-stream"
         assert response.headers["Content-Length"] == "10640"
+
+
+def test_all_geometry():
+    """Test using the all_geometry flag."""
+    expected_config = {
+        "select": {"nodes": [], "ways_poly": [], "ways_line": []},
+        "tables": [],
+        "where": {
+            "nodes": [{"building": [], "op": "or"}, {"highway": [], "op": "or"}, {"waterway": [], "op": "or"}],
+            "ways_poly": [{"building": [], "op": "or"}, {"highway": [], "op": "or"}, {"waterway": [], "op": "or"}],
+            "ways_line": [{"building": [], "op": "or"}, {"highway": [], "op": "or"}, {"waterway": [], "op": "or"}],
+        },
+        "keep": [],
+    }
+
+    # Test JSON
+    json_config = BytesIO(
+        json.dumps(
+            {
+                "filters": {"tags": {"all_geometry": {"join_or": {"building": [], "highway": [], "waterway": []}}}},
+            }
+        ).encode()
+    )
+    json_config_parsed = QueryConfig().parseJson(json_config)
+    assert json_config_parsed == expected_config
+
+    pg = PostgresClient(
+        "underpass",
+        json_config,
+    )
+    assert pg.qc.config == expected_config
+
+    # Test YAML
+    yaml_config_parsed = QueryConfig().parseYaml(f"{rootdir}/all_geometry.yaml")
+    log.warning(yaml_config_parsed)
+    assert yaml_config_parsed == expected_config
+
+    pg = PostgresClient(
+        "underpass",
+        f"{rootdir}/all_geometry.yaml",
+    )
+    assert pg.qc.config == expected_config

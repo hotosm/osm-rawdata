@@ -153,4 +153,6 @@ if __name__ == "__main__":
     test_filters()
     print("--- test_yaml_no_joins ---")
     test_yaml_no_joins()
+    print("--- test_yaml_no_joins_bytesio ---")
+    test_yaml_no_joins_bytesio()
     print("--- done() ---")

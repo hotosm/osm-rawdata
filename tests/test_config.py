@@ -20,6 +20,7 @@
 
 import os
 from io import BytesIO
+from textwrap import dedent
 
 #
 # The JSON data files came from the raw-data-api project, and are currently
@@ -112,6 +113,7 @@ def test_yaml_no_joins():
 
 
 def test_yaml_no_joins_bytesio():
+    """Read YAML file to BytesIO prior to config parse."""
     qc = QueryConfig()
     with open(f"{rootdir}/buildings_no_join.yaml", "rb") as file:
         yaml_obj = BytesIO(file.read())
@@ -132,6 +134,54 @@ def test_yaml_no_joins_bytesio():
 
     op = nodes[0]["op"]
     assert op == "or"
+
+
+def test_yaml_bytesio_from_string():
+    """Read YAML config directly from string input"""
+    qc = QueryConfig()
+    yaml_data = dedent(
+        """
+        select: null
+        from:
+          - nodes
+          - ways_poly
+          - ways_line
+        where:
+          tags:
+            - building: not null
+              highway: not null
+              waterway: not null
+    """
+    )
+    yaml_bytes = BytesIO(yaml_data.encode())
+    config = qc.parseYaml(yaml_bytes)
+    expected_config = {
+        "select": {
+            "nodes": [{"building": {}}, {"highway": {}}, {"waterway": {}}],
+            "ways_poly": [{"building": {}}, {"highway": {}}, {"waterway": {}}],
+            "ways_line": [{"building": {}}, {"highway": {}}, {"waterway": {}}],
+        },
+        "tables": ["nodes", "ways_poly", "ways_line"],
+        "where": {
+            "nodes": [
+                {"building": ["not null"], "op": "or"},
+                {"highway": ["not null"], "op": "or"},
+                {"waterway": ["not null"], "op": "or"},
+            ],
+            "ways_poly": [
+                {"building": ["not null"], "op": "or"},
+                {"highway": ["not null"], "op": "or"},
+                {"waterway": ["not null"], "op": "or"},
+            ],
+            "ways_line": [
+                {"building": ["not null"], "op": "or"},
+                {"highway": ["not null"], "op": "or"},
+                {"waterway": ["not null"], "op": "or"},
+            ],
+        },
+        "keep": [],
+    }
+    assert config == expected_config
 
 
 def test_everything():

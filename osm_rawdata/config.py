@@ -130,7 +130,12 @@ class QueryConfig(object):
         Returns:
             None
         """
-        for table in self.config["tables"]:
+        tables = self.config["tables"]
+        # No tables specified, extract all tables
+        if not tables:
+            tables = ["nodes", "ways_line", "ways_poly"]
+
+        for table in tables:
             self.config["where"][table] = []
             where_entries = data.get("where", {}).get("tags", [])
 
@@ -155,7 +160,11 @@ class QueryConfig(object):
                         if selector is True:
                             # yes is required in osm tag query instead of true
                             selector = "yes"
-                        newtag = {tag: [selector], "op": op}
+                        if selector is None:
+                            # empty instead of None (equivalent to not null)
+                            newtag = {tag: [], "op": op}
+                        else:
+                            newtag = {tag: [selector], "op": op}
                         self.config["where"][table].append(newtag)
 
     def _yaml_parse_select_and_keep(self, data):

@@ -214,7 +214,8 @@ class QueryConfig(object):
             return geom
 
         # Extract geometry
-        self.geometry = shape(data["geometry"])
+        if geom_dict := data.get("geometry"):
+            self.geometry = shape(geom_dict)
 
         # Iterate through each key-value pair in the flattened dictionary
         for key, value in flatdict.FlatDict(data).items():

@@ -184,7 +184,7 @@ class QueryConfig(object):
                 for tag in data["keep"]:
                     self.config["select"][table].append({tag: []})
 
-    def parseJson(self, config: Union[str, BytesIO]):
+    def parseJson(self, config: Union[str, BytesIO]):  # noqa N802
         """Parse the JSON format config file using the Underpass schema.
 
         Args:
@@ -198,6 +198,7 @@ class QueryConfig(object):
             with open(config, "r") as config_file:
                 data = json.load(config_file)
         elif isinstance(config, BytesIO):
+            config.seek(0)  # Reset the file pointer to the beginning
             data = json.load(config)
         else:
             log.error(f"Unsupported config format: {config}")

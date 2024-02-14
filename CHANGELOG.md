@@ -1,3 +1,19 @@
+## 0.2.2 (2024-02-14)
+
+### Fix
+
+- handle both yaml and json BytesIO PostgresClient config
+- handle empty tags in yaml format (not null)
+- reading of bytesio config file seeking
+- case when geometry is not set during init
+- Move GetRecordCount() and getPage() here as they're now asyncpg specific
+- allow parsing geojson string for execQuery
+
+### Refactor
+
+- fix linting errors for config.py
+- remove clip_to_aoi option (default in raw-data-api)
+
 ## 0.2.1 (2024-02-09)
 
 ### Fix

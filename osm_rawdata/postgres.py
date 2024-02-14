@@ -215,15 +215,32 @@ class DatabaseAccess(object):
         Returns:
             dict: The filters.
         """
-        # Initialize the filters dictionary with empty join_or and join_and
-        # dictionaries for point, line, and polygon
+        # Initialize the filters dictionary
         filters = {
-            "tags": {
-                "point": {"join_or": {}, "join_and": {}},
-                "line": {"join_or": {}, "join_and": {}},
-                "polygon": {"join_or": {}, "join_and": {}},
-            }
+            "tags": {},
         }
+
+        # FIXME handle all_geometry key
+        # FIXME requires updates to parseJson logic
+        # # Check if all geometry types are present
+        # all_geometry_types = all(geom_type in self._get_geometry_types(config) for geom_type in ['point', 'line', 'polygon'])
+
+        # if all_geometry_types:
+        #     # All geometries
+        #     all_geometry_filters = {"join_or": {}}
+        #     # Extract filters from config["where"]
+        #     for table, conditions in config.config["where"].items():
+        #         for condition in conditions:
+        #             key, _ = list(condition.items())[0]  # Extract the filter key
+        #             all_geometry_filters["join_or"][key] = []
+        #     filters["tags"]["all_geometry"] = all_geometry_filters
+        # else:
+
+        # Specific geometry types
+        filters["tags"]["point"] = {"join_or": {}, "join_and": {}}
+        filters["tags"]["line"] = {"join_or": {}, "join_and": {}}
+        filters["tags"]["polygon"] = {"join_or": {}, "join_and": {}}
+
         # Mapping between database table names and geometry types
         tables = {"nodes": "point", "ways_poly": "polygon", "ways_line": "line"}
 

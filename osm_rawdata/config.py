@@ -253,6 +253,7 @@ class QueryConfig(object):
             if subsection == "attributes":
                 # For attributes, update select fields and tables
                 for attribute_name in value:
+                    # FIXME needs a refactor to handle all_geometry correctly
                     if geom_type == "all_geometry":
                         for geometry_type in ["nodes", "ways_line", "ways_poly"]:
                             self.config["select"][geometry_type].append({attribute_name: {}})

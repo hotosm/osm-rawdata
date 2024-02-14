@@ -177,6 +177,7 @@ class DatabaseAccess(object):
             allgeom (bool): Whether to return centroids or all the full geometry
                 TODO this is not implemented.
             extra_params (dict): Extra parameters to include in JSON config root.
+                These params override existing values if set.
 
         Returns:
             str: The stringified JSON data.
@@ -189,6 +190,7 @@ class DatabaseAccess(object):
             "attributes": self._get_attributes(config),
             **extra_params,
         }
+
         return json.dumps(json_data)
 
     def _get_geometry_types(self, config: QueryConfig) -> Union[list, None]:

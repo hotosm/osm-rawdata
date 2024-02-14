@@ -19,7 +19,6 @@
 #
 """Tests for data extract generation."""
 
-import json
 import logging
 import os
 import time
@@ -75,20 +74,6 @@ def test_fgb_data_extract():
 
 def test_parse_reparse_json():
     """Test parsing and reparsing json config."""
-    geom = json.loads(json.dumps({"geometry": {
-        "type": "Polygon",
-        "coordinates": [
-            [
-                [-10.786407, 6.360272],
-                [-10.787035, 6.36407],
-                [-10.781848, 6.369421],
-                [-10.781318, 6.369917],
-                [-10.780706, 6.369366],
-                [-10.78607, 6.360738],
-                [-10.786407, 6.360272],
-            ]
-        ],
-    }}))
     qc = QueryConfig()
     parsed_config = qc.parseJson(f"{rootdir}/levels.json")
     pg = PostgresClient(

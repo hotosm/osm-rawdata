@@ -19,6 +19,8 @@
 # 1100 13th Street NW Suite 800 Washington, D.C. 20005
 # <info@hotosm.org>
 
+"""YAML and JSON config parsing to a standardised config format."""
+
 import argparse
 import json
 import logging
@@ -45,9 +47,10 @@ log = logging.getLogger(__name__)
 
 
 class QueryConfig(object):
+    """Parse a config file into a data structure."""
+
     def __init__(self, boundary: Polygon = None):
-        """This class parses a config file that defines the Query
-        into data structure.
+        """Init the QueryConfig object.
 
         Args:
             boundary (Polygon): The project boundary.
@@ -70,7 +73,7 @@ class QueryConfig(object):
         # for polygon extracts, sometimes we just want the center point
         self.centroid = False
 
-    def parseYaml(self, config: Union[str, BytesIO]):
+    def parseYaml(self, config: Union[str, BytesIO]):  # noqa N802
         """Parse the YAML config file format into the internal data structure.
 
         Args:
@@ -93,7 +96,7 @@ class QueryConfig(object):
         """Private method to load YAML data from a file.
 
         Args:
-            filespec (str): The file to read.
+            config (str, BytesIO): The disk or memory file to read.
 
         Returns:
             data (dict): The loaded YAML data.
@@ -214,14 +217,14 @@ class QueryConfig(object):
             raise ValueError(f"Invalid config {config}")
 
         # Helper function to convert geometry names
-        def convert_geometry(geom):
-            if geom == "point":
+        def convert_geometry(geom_type):
+            if geom_type == "point":
                 return "nodes"
-            elif geom == "line":
+            elif geom_type == "line":
                 return "ways_line"
-            elif geom == "polygon":
+            elif geom_type == "polygon":
                 return "ways_poly"
-            return geom
+            return geom_type
 
         # Extract geometry
         if geom_dict := data.get("geometry"):
@@ -281,9 +284,9 @@ class QueryConfig(object):
 
         keys = list()
         for key, value in self.config["select"].items():
-            if type(value) == list:
+            if isinstance(value, list):
                 for v in value:
-                    if type(v) == str:
+                    if isinstance(v, str):
                         print(f"\tSelecting table '{key}' has value '{v}'")
                         keys.append(v)
                         continue
@@ -295,11 +298,11 @@ class QueryConfig(object):
         # print(f"\tSelecting tag \'{key}\' \'{k1}\' has values \'{keys}\'")
         print("Where: ")
         for key, value in self.config["where"].items():
-            if type(value) == list:
+            if isinstance(value, list):
                 for v in value:
                     op = v["op"].upper()
                     # del v['op']
-                    if type(v) == str:
+                    if isinstance(v, str):
                         print(f"\tWhere table '{key}' has value '{v}'")
                         keys.append(v)
                         continue

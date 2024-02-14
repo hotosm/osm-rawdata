@@ -499,6 +499,7 @@ class DatabaseAccess(object):
 
         url = f"{self.url}/snapshot/"
         try:
+            log.debug(f"Raw Data API snapshot JSON config: {query}")
             result = self.session.post(url, data=query, headers=self.headers)
             result.raise_for_status()
         except requests.exceptions.HTTPError:
@@ -625,8 +626,18 @@ class PostgresClient(DatabaseAccess):
 
             # BytesIO object passed
             elif isinstance(config, BytesIO):
+                config.seek(0)  # Reset the file pointer to the beginning
                 config_data = config
-                config_type = "yaml"
+                try:
+                    # Is JSON
+                    json.load(config_data)
+                    log.debug("Parsed config is JSON format")
+                    config_type = "json"
+                except json.JSONDecodeError as e:
+                    log.error(e)
+                    # Is YAML
+                    log.debug("Parsed config is YAML format")
+                    config_type = "yaml"
 
             else:
                 log.warning(f"Config input is invalid for PostgresClient: {config}")

@@ -29,7 +29,7 @@ services:
     container_name: osm-rawdata
     volumes:
       # Mount local package
-      - ./osm_rawdata:/root/.local/lib/python3.10/site-packages/osm_rawdata
+      - ./osm_rawdata:/usr/local/lib/python3.10/site-packages/osm_rawdata
       # Mount local tests
       - ./tests:/data/tests
     depends_on:

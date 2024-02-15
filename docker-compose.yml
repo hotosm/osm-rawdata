@@ -23,7 +23,7 @@ networks:
 
 services:
   rawdata:
-    image: "ghcr.io/hotosm/osm-rawdata:ci"
+    image: "ghcr.io/hotosm/osm-rawdata:${TAG_OVERRIDE:-ci}"
     build:
       target: ci
     container_name: osm-rawdata

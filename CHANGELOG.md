@@ -1,3 +1,13 @@
+## 0.2.3 (2024-02-15)
+
+### Fix
+
+- improve yaml config parsing edge cases
+
+### Refactor
+
+- better index handling for postgres get geom types
+
 ## 0.2.2 (2024-02-14)
 
 ### Fix

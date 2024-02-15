@@ -204,7 +204,7 @@ class DatabaseAccess(object):
         """
         geometry_types = []
         for table, geometry_type in {"nodes": "point", "ways_line": "line", "ways_poly": "polygon"}.items():
-            if config.config["select"][table] or config.config["where"][table]:
+            if config.config.get("select", {}).get(table) or config.config.get("where", {}).get(table):
                 geometry_types.append(geometry_type)
         return geometry_types or None
 

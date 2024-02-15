@@ -133,7 +133,7 @@ class QueryConfig(object):
         Returns:
             None
         """
-        tables = self.config["tables"]
+        tables = self.config.get("tables", [])
         # No tables specified, extract all tables
         if not tables:
             tables = ["nodes", "ways_line", "ways_poly"]
@@ -179,21 +179,21 @@ class QueryConfig(object):
         Returns:
             None
         """
-        for table in self.config["tables"]:
+        for table in self.config.get("tables", []):
             # 'select' not tags specified, use 'where' tags instead
-            if data["select"] is None:
+            if data.get("select") is None:
                 tags = [key for entry in self.config["where"][table] for key in entry.keys() if key != "op"]
                 self.config["select"][table] = [{tag: {}} for tag in tags]
 
             # 'select' tags specified, process
             else:
-                for tag in data["select"]:
+                for tag in data.get("select", []):
                     if isinstance(tag, dict):
                         self.config["select"][table].append(tag)
                     else:
                         self.config["select"][table].append({tag: []})
 
-                for tag in data["keep"]:
+                for tag in data.get("keep", []):
                     self.config["select"][table].append({tag: []})
 
     def parseJson(self, config: Union[str, BytesIO]):  # noqa N802

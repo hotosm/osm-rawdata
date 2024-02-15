@@ -556,7 +556,7 @@ class DatabaseAccess(object):
             log.debug(f"Current status: {response_status}")
 
             # response_status options: STARTED, PENDING, SUCCESS
-            if response_status != "SUCCESS" or isinstance(task_info, str) or not task_info.get("download_url"):
+            if response_status != "SUCCESS" or not isinstance(task_info, dict) or not task_info.get("download_url"):
                 # Adjust polling frequency after the first minute
                 if elapsed_time > 60:
                     polling_interval = 10  # Poll every 10 seconds after the first minute

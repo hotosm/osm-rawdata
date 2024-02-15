@@ -1,7 +1,6 @@
 name: 🧪 PyTest
 
 on:
-  # Run tests on all pushed branches
   push:
     branches: [main]
   # Run tests on PR, prior to merge to main & development
@@ -12,7 +11,11 @@ on:
 
 jobs:
   pytest:
-    uses: hotosm/gh-workflows/.github/workflows/test_pytest.yml@1.2.4
+    uses: hotosm/gh-workflows/.github/workflows/test_compose.yml@1.4.3
     with:
       image_name: ghcr.io/${{ github.repository }}
       tag_override: ci
+      compose_service: rawdata
+      compose_command: pytest
+      cache_extra_imgs: |
+        "docker.io/postgis/postgis:14-3.4-alpine"

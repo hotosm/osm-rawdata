@@ -15,4 +15,4 @@ jobs:
     uses: hotosm/gh-workflows/.github/workflows/test_pytest.yml@1.2.4
     with:
       image_name: ghcr.io/${{ github.repository }}
-      tag_override: ${{ github.event_name == 'push' && 'ci' || '' }}
+      tag_override: ci

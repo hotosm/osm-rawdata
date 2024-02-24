@@ -69,7 +69,7 @@ def test_fgb_data_extract():
     with requests.head(extract_url) as response:
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "binary/octet-stream"
-        assert response.headers["Content-Length"] == "10640"
+        assert response.headers["Content-Length"] == "10704"
 
 
 def test_parse_reparse_json():

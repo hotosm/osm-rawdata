@@ -1,3 +1,10 @@
+## 0.2.4 (2024-04-07)
+
+### Fix
+
+- return None if raw-data-api error dict response (log error)
+- improve check for raw-data-api success
+
 ## 0.2.3 (2024-02-15)
 
 ### Fix

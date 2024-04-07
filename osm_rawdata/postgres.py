@@ -526,7 +526,7 @@ class DatabaseAccess(object):
                 error_dict = result.json()
                 error_dict["status_code"] = result.status_code
                 log.error(f"Failed to get extract from Raw Data API: {error_dict}")
-                return error_dict
+                return None
             else:
                 log.error("Failed to make request to raw data API")
 

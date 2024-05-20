@@ -1,3 +1,9 @@
+## 0.3.0 (2024-05-20)
+
+### Feat
+
+- update env var UNDERPASS_API_URL --> RAW_DATA_API_URL
+
 ## 0.2.4 (2024-04-07)
 
 ### Fix

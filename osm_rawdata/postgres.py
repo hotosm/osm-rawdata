@@ -132,7 +132,7 @@ class DatabaseAccess(object):
         if self.uri["dbname"] == "underpass":
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            self.url = os.getenv("UNDERPASS_API_URL", "https://api-prod.raw-data.hotosm.org/v1")
+            self.url = os.getenv("RAW_DATA_API_URL", "https://api-prod.raw-data.hotosm.org/v1")
             self.headers = {"accept": "application/json", "Content-Type": "application/json"}
         else:
             log.info(f"Opening database connection to: {self.uri['dbname']}")

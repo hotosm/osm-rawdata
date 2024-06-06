@@ -65,7 +65,6 @@ includes = ["osm_rawdata"]
 source-includes = ["LICENSE.md", "README.md"]
 [tool.pdm.dev-dependencies]
 dev = [
-    "black>=23.7.0",
     "commitizen>=3.6.0",
     "pre-commit>=3.3.3",
 ]
@@ -83,16 +82,10 @@ docs = [
     "mkdocs-exclude>=1.0.2",
 ]
 
-[tool.black]
-line-length = 132
-target-versions = ["py310", "py311"]
-
 [tool.ruff]
 fix = true
-line-length = 132
+line-length = 88
 target-version = "py310"
-select = ["I", "E", "W", "D", "B", "F", "N", "Q"]
-ignore = ["N805", "B008"]
 exclude = [
     ".git",
     ".ruff_cache",
@@ -102,9 +95,11 @@ exclude = [
     "dist",
     "osm_rawdata/__version__.py",
 ]
-[tool.ruff.pydocstyle]
+[tool.ruff.lint]
+select = ["I", "E", "W", "D", "B", "F", "N", "Q"]
+ignore = ["N805", "B008"]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
-
 
 [project.scripts]
 # osm-rawdata = "osm_rawdata.cmd:main"

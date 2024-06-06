@@ -64,13 +64,17 @@ class DatabaseAccess(object):
         if not uri.username:
             self.dburi["dbuser"] = os.getenv("PGUSER", default=None)
             if not self.dburi["dbuser"]:
-                log.error("You must specify the user name in the database URI, or set PGUSER")
+                log.error(
+                    "You must specify the user name in the database URI, or set PGUSER"
+                )
         else:
             self.dburi["dbuser"] = uri.username
         if not uri.password:
             self.dburi["dbpass"] = os.getenv("PGPASSWORD", default=None)
             if not self.dburi["dbpass"]:
-                log.error("You must specify the user password in the database URI, or set PGPASSWORD")
+                log.error(
+                    "You must specify the user password in the database URI, or set PGPASSWORD"
+                )
         else:
             self.dburi["dbpass"] = uri.password
         if not uri.hostname:
@@ -88,8 +92,13 @@ class DatabaseAccess(object):
 
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            self.url = os.getenv("RAW_DATA_API_URL", "https://raw-data-api0.hotosm.org/v1")
-            self.headers = {"accept": "application/json", "Content-Type": "application/json"}
+            self.url = os.getenv(
+                "RAW_DATA_API_URL", "https://raw-data-api0.hotosm.org/v1"
+            )
+            self.headers = {
+                "accept": "application/json",
+                "Content-Type": "application/json",
+            }
         else:
             # log.debug(f"Connecting with: {connect}")
             try:
@@ -128,11 +137,20 @@ class DatabaseAccess(object):
         # This only effects the output file
         geometrytype = list()
         # for table in config.config['tables']:
-        if len(config.config["select"]["nodes"]) > 0 or len(config.config["where"]["nodes"]) > 0:
+        if (
+            len(config.config["select"]["nodes"]) > 0
+            or len(config.config["where"]["nodes"]) > 0
+        ):
             geometrytype.append("point")
-        if len(config.config["select"]["ways_line"]) > 0 or len(config.config["where"]["ways_line"]) > 0:
+        if (
+            len(config.config["select"]["ways_line"]) > 0
+            or len(config.config["where"]["ways_line"]) > 0
+        ):
             geometrytype.append("line")
-        if len(config.config["select"]["ways_poly"]) > 0 or len(config.config["where"]["ways_poly"]) > 0:
+        if (
+            len(config.config["select"]["ways_poly"]) > 0
+            or len(config.config["where"]["ways_poly"]) > 0
+        ):
             geometrytype.append("polygon")
         feature["geometryType"] = geometrytype
 
@@ -412,7 +430,10 @@ class DatabaseAccess(object):
 
         # If there is no config file, don't modify the results
         if self.qc:
-            if len(self.qc.config["where"]["ways_poly"]) == 0 and len(self.qc.config["where"]["nodes"]) == 0:
+            if (
+                len(self.qc.config["where"]["ways_poly"]) == 0
+                and len(self.qc.config["where"]["nodes"]) == 0
+            ):
                 return result
 
         for item in result:
@@ -606,11 +627,22 @@ to define the are to be covered in the extract. Optionally a data file can be us
     )
     parser.add_argument("-v", "--verbose", nargs="?", const="0", help="verbose output")
     parser.add_argument("-u", "--uri", default="underpass", help="Database URI")
-    parser.add_argument("-b", "--boundary", required=True, help="Boundary polygon to limit the data size")
-    parser.add_argument("-s", "--sql", help="Custom SQL query to execute against the database")
+    parser.add_argument(
+        "-b",
+        "--boundary",
+        required=True,
+        help="Boundary polygon to limit the data size",
+    )
+    parser.add_argument(
+        "-s", "--sql", help="Custom SQL query to execute against the database"
+    )
     parser.add_argument("-a", "--all", help="All the geometry or just centroids")
-    parser.add_argument("-c", "--config", help="The config file for the query (json or yaml)")
-    parser.add_argument("-o", "--outfile", default="extract.geojson", help="The output file")
+    parser.add_argument(
+        "-c", "--config", help="The config file for the query (json or yaml)"
+    )
+    parser.add_argument(
+        "-o", "--outfile", default="extract.geojson", help="The output file"
+    )
     args = parser.parse_args()
 
     # if len(argv) <= 1 or (args.sql is None and args.config is None):
@@ -624,7 +656,10 @@ to define the are to be covered in the extract. Optionally a data file can be us
 
     logging.basicConfig(
         level=log_level,
-        format=("%(asctime)s.%(msecs)03d [%(levelname)s] " "%(name)s | %(funcName)s:%(lineno)d | %(message)s"),
+        format=(
+            "%(asctime)s.%(msecs)03d [%(levelname)s] "
+            "%(name)s | %(funcName)s:%(lineno)d | %(message)s"
+        ),
         datefmt="%y-%m-%d %H:%M:%S",
         stream=sys.stdout,
     )

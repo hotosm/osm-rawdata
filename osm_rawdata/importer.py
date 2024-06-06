@@ -187,7 +187,9 @@ def parquetThread(
                 tags=scalar,
             )
         elif hex.geom_type == "MultiPolygon":
-            gdata = geoalchemy2.shape.from_shape(hex.convex_hull, srid=4326, extended=True)
+            gdata = geoalchemy2.shape.from_shape(
+                hex.convex_hull, srid=4326, extended=True
+            )
             sql = insert(ways).values(
                 geom=bytes(gdata.data),
                 tags=scalar,
@@ -340,7 +342,11 @@ class MapImporter(object):
                 if len(overture.data[block : block + chunk]) == 0:
                     continue
                 log.debug("Dispatching Block %d:%d" % (block, block + chunk))
-                result = executor.submit(parquetThread, overture.data[block : block + chunk], connections[index])
+                result = executor.submit(
+                    parquetThread,
+                    overture.data[block : block + chunk],
+                    connections[index],
+                )
                 block += chunk
                 index += 1
             executor.shutdown()
@@ -387,7 +393,11 @@ class MapImporter(object):
             block = 0
             while block <= entries:
                 log.debug("Dispatching Block %d:%d" % (block, block + chunk))
-                result = executor.submit(importThread, data["features"][block : block + chunk], self.connections[index])
+                result = executor.submit(
+                    importThread,
+                    data["features"][block : block + chunk],
+                    self.connections[index],
+                )
                 block += chunk
                 index += 1
             executor.shutdown()
@@ -420,7 +430,9 @@ def main():
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
+        )
         ch.setFormatter(formatter)
         log.addHandler(ch)
 

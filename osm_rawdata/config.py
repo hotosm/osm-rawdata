@@ -182,7 +182,12 @@ class QueryConfig(object):
         for table in self.config.get("tables", []):
             # 'select' not tags specified, use 'where' tags instead
             if data.get("select") is None:
-                tags = [key for entry in self.config["where"][table] for key in entry.keys() if key != "op"]
+                tags = [
+                    key
+                    for entry in self.config["where"][table]
+                    for key in entry.keys()
+                    if key != "op"
+                ]
                 self.config["select"][table] = [{tag: {}} for tag in tags]
 
             # 'select' tags specified, process
@@ -256,7 +261,9 @@ class QueryConfig(object):
                     # FIXME needs a refactor to handle all_geometry correctly
                     if geom_type == "all_geometry":
                         for geometry_type in ["nodes", "ways_line", "ways_poly"]:
-                            self.config["select"][geometry_type].append({attribute_name: {}})
+                            self.config["select"][geometry_type].append(
+                                {attribute_name: {}}
+                            )
                             self.config["tables"].append(geometry_type)
                     else:
                         self.config["select"][geom_type].append({attribute_name: {}})
@@ -311,7 +318,9 @@ class QueryConfig(object):
                         keys.append(v1)
                         if k1 == "op":
                             continue
-                        print(f"\tWhere table '{key}', tag '{k1}' has values '{v1}' {op}")
+                        print(
+                            f"\tWhere table '{key}', tag '{k1}' has values '{v1}' {op}"
+                        )
             else:
                 print(f"\tSelecting tag '{key}'")
         # print("Tables")
@@ -344,7 +353,9 @@ def main():
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
+        )
         ch.setFormatter(formatter)
         log.addHandler(ch)
 

@@ -72,7 +72,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("-f", "--file", help="The country or US state to download")
-    parser.add_argument("-l", "--list", action="store_true", help="List all files on GeoFabrik")
+    parser.add_argument(
+        "-l", "--list", action="store_true", help="List all files on GeoFabrik"
+    )
     args = parser.parse_args()
 
     if len(argv) <= 1:
@@ -84,7 +86,9 @@ def main():
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
+        )
         ch.setFormatter(formatter)
         log.addHandler(ch)
 
@@ -97,7 +101,9 @@ def main():
     if args.file:
         region = geof.getRegion(args.file)
         if not region:
-            log.error(f"{args.file} not found on GeoFabrik! Use the -l option to list all the regions")
+            log.error(
+                f"{args.file} not found on GeoFabrik! Use the -l option to list all the regions"
+            )
             quit()
 
         uri = f"http://download.geofabrik.de/{region.lower()}/{args.file.lower()}-latest.osm.pbf"

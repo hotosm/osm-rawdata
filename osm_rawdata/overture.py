@@ -139,7 +139,9 @@ def main():
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
     parser.add_argument("-i", "--infile", required=True, help="Input file")
-    parser.add_argument("-o", "--outfile", default="overture.geojson", help="Output file")
+    parser.add_argument(
+        "-o", "--outfile", default="overture.geojson", help="Output file"
+    )
 
     args = parser.parse_args()
 
@@ -148,7 +150,9 @@ def main():
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
+        )
         ch.setFormatter(formatter)
         log.addHandler(ch)
 

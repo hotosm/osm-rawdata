@@ -50,7 +50,10 @@ def test_levels():
     if "admin_level" in data["select"]["ways_poly"][2]:
         hits += 1
 
-    if qc.config["fileName"] == "Example export with all features" and qc.config["outputType"] == "geojson":
+    if (
+        qc.config["fileName"] == "Example export with all features"
+        and qc.config["outputType"] == "geojson"
+    ):
         hits += 1
 
     assert hits == 4
@@ -80,7 +83,10 @@ def test_formats():
     # this query contains only the geometry and the output file name and type
     qc = QueryConfig()
     qc.parseJson(f"{rootdir}/formats.json")
-    assert qc.config["outputType"] == "shp" and qc.config["fileName"] == "Pokhara_all_features"
+    assert (
+        qc.config["outputType"] == "shp"
+        and qc.config["fileName"] == "Pokhara_all_features"
+    )
 
 
 def test_bytesio():
@@ -88,7 +94,10 @@ def test_bytesio():
     with open(f"{rootdir}/formats.json", "rb") as file:
         json_obj = BytesIO(file.read())
     qc.parseJson(json_obj)
-    assert qc.config["outputType"] == "shp" and qc.config["fileName"] == "Pokhara_all_features"
+    assert (
+        qc.config["outputType"] == "shp"
+        and qc.config["fileName"] == "Pokhara_all_features"
+    )
 
 
 def test_yaml_no_joins():

@@ -113,7 +113,13 @@ def uriParser(source):
         dbhost = "localhost"
 
         # print(f"{source}\n\tcolon={colon} rcolon={rcolon} atsign={atsign} slash={slash}")
-    return {"dbname": dbname, "dbhost": dbhost, "dbuser": dbuser, "dbpass": dbpass, "dbport": dbport}
+    return {
+        "dbname": dbname,
+        "dbhost": dbhost,
+        "dbuser": dbuser,
+        "dbpass": dbpass,
+        "dbport": dbport,
+    }
 
 
 class DatabaseAccess(object):
@@ -132,14 +138,23 @@ class DatabaseAccess(object):
         if self.uri["dbname"] == "underpass":
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            self.url = os.getenv("RAW_DATA_API_URL", "https://api-prod.raw-data.hotosm.org/v1")
-            self.headers = {"accept": "application/json", "Content-Type": "application/json"}
+            self.url = os.getenv(
+                "RAW_DATA_API_URL", "https://api-prod.raw-data.hotosm.org/v1"
+            )
+            self.headers = {
+                "accept": "application/json",
+                "Content-Type": "application/json",
+            }
         else:
             log.info(f"Opening database connection to: {self.uri['dbname']}")
             connect = "PG: dbname=" + self.uri["dbname"]
             if "dbname" in self.uri and self.uri["dbname"] is not None:
                 connect = f"dbname={self.uri['dbname']}"
-            elif "dbhost" in self.uri and self.uri["dbhost"] == "localhost" and self.uri["dbhost"] is not None:
+            elif (
+                "dbhost" in self.uri
+                and self.uri["dbhost"] == "localhost"
+                and self.uri["dbhost"] is not None
+            ):
                 connect = f"host={self.uri['dbhost']} dbname={self.uri['dbname']}"
             if "dbuser" in self.uri and self.uri["dbuser"] is not None:
                 connect += f" user={self.uri['dbuser']}"
@@ -203,8 +218,14 @@ class DatabaseAccess(object):
             Union[list, None]: A list of geometry types or None if empty.
         """
         geometry_types = []
-        for table, geometry_type in {"nodes": "point", "ways_line": "line", "ways_poly": "polygon"}.items():
-            if config.config.get("select", {}).get(table) or config.config.get("where", {}).get(table):
+        for table, geometry_type in {
+            "nodes": "point",
+            "ways_line": "line",
+            "ways_poly": "polygon",
+        }.items():
+            if config.config.get("select", {}).get(table) or config.config.get(
+                "where", {}
+            ).get(table):
                 geometry_types.append(geometry_type)
         return geometry_types or None
 
@@ -462,7 +483,10 @@ class DatabaseAccess(object):
             return FeatureCollection(features)
 
         # If there is no config file, don't modify the results
-        if len(self.qc.config["where"]["ways_poly"]) == 0 and len(self.qc.config["where"]["nodes"]) == 0:
+        if (
+            len(self.qc.config["where"]["ways_poly"]) == 0
+            and len(self.qc.config["where"]["nodes"]) == 0
+        ):
             return result
 
         for item in result:
@@ -544,7 +568,9 @@ class DatabaseAccess(object):
         log.debug(f"Raw Data API Query URL: {task_query_url}")
 
         polling_interval = 2  # Initial polling interval in seconds
-        max_polling_duration = 600  # Maximum duration for polling in seconds (10 minutes)
+        max_polling_duration = (
+            600  # Maximum duration for polling in seconds (10 minutes)
+        )
         elapsed_time = 0
 
         while elapsed_time < max_polling_duration:
@@ -556,13 +582,21 @@ class DatabaseAccess(object):
             log.debug(f"Current status: {response_status}")
 
             # response_status options: STARTED, PENDING, SUCCESS
-            if response_status != "SUCCESS" or not isinstance(task_info, dict) or not task_info.get("download_url"):
+            if (
+                response_status != "SUCCESS"
+                or not isinstance(task_info, dict)
+                or not task_info.get("download_url")
+            ):
                 # Adjust polling frequency after the first minute
                 if elapsed_time > 60:
-                    polling_interval = 10  # Poll every 10 seconds after the first minute
+                    polling_interval = (
+                        10  # Poll every 10 seconds after the first minute
+                    )
 
                 # Wait before polling again
-                log.debug(f"Waiting {polling_interval} seconds before polling API again...")
+                log.debug(
+                    f"Waiting {polling_interval} seconds before polling API again..."
+                )
                 time.sleep(polling_interval)
                 elapsed_time += polling_interval
 
@@ -716,7 +750,10 @@ class PostgresClient(DatabaseAccess):
 
         if (geom_type := boundary.get("type")) == "FeatureCollection":
             # Convert each feature into a Shapely geometry
-            geometries = [shape(feature.get("geometry")) for feature in boundary.get("features", [])]
+            geometries = [
+                shape(feature.get("geometry"))
+                for feature in boundary.get("features", [])
+            ]
             merged_geom = unary_union(geometries)
         elif geom_type == "Feature":
             merged_geom = shape(boundary.get("geometry"))
@@ -769,11 +806,22 @@ Optionally a data file can be used.
     )
     parser.add_argument("-v", "--verbose", nargs="?", const="0", help="verbose output")
     parser.add_argument("-u", "--uri", default="underpass", help="Database URI")
-    parser.add_argument("-b", "--boundary", required=True, help="Boundary polygon to limit the data size")
-    parser.add_argument("-s", "--sql", help="Custom SQL query to execute against the database")
+    parser.add_argument(
+        "-b",
+        "--boundary",
+        required=True,
+        help="Boundary polygon to limit the data size",
+    )
+    parser.add_argument(
+        "-s", "--sql", help="Custom SQL query to execute against the database"
+    )
     parser.add_argument("-a", "--all", help="All the geometry or just centroids")
-    parser.add_argument("-c", "--config", help="The config file for the query (json or yaml)")
-    parser.add_argument("-o", "--outfile", default="extract.geojson", help="The output file")
+    parser.add_argument(
+        "-c", "--config", help="The config file for the query (json or yaml)"
+    )
+    parser.add_argument(
+        "-o", "--outfile", default="extract.geojson", help="The output file"
+    )
     args = parser.parse_args()
 
     if len(argv) <= 1 or (args.sql is None and args.config is None):
@@ -785,7 +833,9 @@ Optionally a data file can be used.
         log.setLevel(logging.DEBUG)
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(threadName)10s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(threadName)10s - %(name)s - %(levelname)s - %(message)s"
+        )
         ch.setFormatter(formatter)
         log.addHandler(ch)
 

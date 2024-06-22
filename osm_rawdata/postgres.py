@@ -476,23 +476,23 @@ class DatabaseAccess(object):
             # print(f"{item}")
             tags = dict()
             geom = wkt.loads(item[0])
-            #tags["id"] = item[1]
+            # tags["id"] = item[1]
             tags["version"] = item[2]
             if query.find(" refs ") > 0:
-               tags["refs"] = str(item[len(item) - 1])
-               # breakpoint()
+                tags["refs"] = str(item[len(item) - 1])
+                # breakpoint()
             i = 3
             # Figure out the tags from the SELECT part of the query
-            keys = query.replace(',', '').replace("tags->>", '').replace("'", '')
+            keys = query.replace(",", "").replace("tags->>", "").replace("'", "")
             end = keys.find("FROM")
             res = keys[:end].split(" ")
             # This should be the geometry
             geom = wkt.loads(item[0])
             for i in range(2, len(item)):
                 # print(f"{res[i]} = {item[i - 1]}")
-                if item[i-1] is None:
+                if item[i - 1] is None:
                     continue
-                tags[res[i]] = item[i-1]
+                tags[res[i]] = item[i - 1]
             features.append(Feature(geometry=geom, properties=tags))
         return FeatureCollection(features)
 

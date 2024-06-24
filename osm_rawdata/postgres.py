@@ -331,6 +331,10 @@ class DatabaseAccess(object):
                     select += f"tags->>'{k1}', "
             select = select[:-2]
 
+            # If a way, we need the refs for conflating with JOSM
+            if table == "ways_poly":
+                select += ", refs "
+
             join_or = list()
             join_and = list()
             for entry in config.config["where"][table]:
@@ -493,35 +497,28 @@ class DatabaseAccess(object):
             if len(item) <= 1 and len(result) == 1:
                 return result
                 # break
-            geom = wkt.loads(item[0])
+            # print(f"{item}")
             tags = dict()
-            tags["id"] = item[1]
+            geom = wkt.loads(item[0])
+            # tags["id"] = item[1]
             tags["version"] = item[2]
+            if query.find(" refs ") > 0:
+                tags["refs"] = str(item[len(item) - 1])
+                # breakpoint()
             i = 3
-            # If there are no tables, we're using a custom SQL query
-            if len(self.qc.config["tables"]) > 0:
-                # map the value in the select to the values returns for them.
-                for _table, values in self.qc.config["select"].items():
-                    for entry in values:
-                        if i == len(item):
-                            break
-                        [[k, v]] = entry.items()
-                        if item[i] is not None:
-                            tags[k] = item[i]
-                        i += 1
-            else:
-                # Figure out the tags from the custom SELECT
-                end = query.find("FROM")
-                res = query[:end].split(" ")
-                # This should be the geometry
-                geom = wkt.loads(item[0])
-                # This should be the OSM ID
-                tags[res[2][:-1]] = item[1]
-                # This should be the version
-                tags[res[3][:-1]] = item[2]
+            # Figure out the tags from the SELECT part of the query
+            keys = query.replace(",", "").replace("tags->>", "").replace("'", "")
+            end = keys.find("FROM")
+            res = keys[:end].split(" ")
+            # This should be the geometry
+            geom = wkt.loads(item[0])
+            for i in range(2, len(item)):
+                # print(f"{res[i]} = {item[i - 1]}")
+                if item[i - 1] is None:
+                    continue
+                tags[res[i]] = item[i - 1]
             features.append(Feature(geometry=geom, properties=tags))
         return FeatureCollection(features)
-        # return features
 
     def queryRemote(
         self,
@@ -854,7 +851,7 @@ Optionally a data file can be used.
             log.info(f"Canned Query returned {len(result['features'])} records")
 
         outfile = open(args.outfile, "w")
-        geojson.dump(result, outfile)
+        geojson.dump(result, outfile, indent=4)
 
         log.debug(f"Wrote {args.outfile}")
 

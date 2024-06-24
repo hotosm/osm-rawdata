@@ -138,7 +138,7 @@ class DatabaseAccess(object):
         if self.uri["dbname"] == "underpass":
             # Use a persistant connect, better for multiple requests
             self.session = requests.Session()
-            self.url = os.getenv(
+            self.uri = os.getenv(
                 "RAW_DATA_API_URL", "https://api-prod.raw-data.hotosm.org/v1"
             )
             self.headers = {
@@ -537,7 +537,7 @@ class DatabaseAccess(object):
         # Send the request to raw data api
         result = None
 
-        url = f"{self.url}/snapshot/"
+        url = f"{self.uri}/snapshot/"
         try:
             log.debug(f"Raw Data API snapshot JSON config: {query}")
             result = self.session.post(url, data=query, headers=self.headers)

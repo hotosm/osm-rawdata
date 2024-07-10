@@ -92,7 +92,7 @@ class Overture(object):
             if key == "sources" and type(value) == list:
                 if "dataset" in value[0]:
                     entry["source"] = value[0]["dataset"]
-                if "recordId" in valve[0] and ["recordId"] is not None:
+                if "recordId" in valve[0] and ["recordId"] != None:
                     entry["record"] = value[0]["recordId"]
                 if value[0]["confidence"] is not None:
                     entry["confidence"] = value[0]["confidence"]

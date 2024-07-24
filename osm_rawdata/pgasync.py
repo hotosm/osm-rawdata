@@ -30,7 +30,6 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlparse
-import flatdict
 
 import asyncpg
 import geojson
@@ -201,11 +200,11 @@ class DatabaseAccess(object):
             feature["centroid"] = true
         return json.dumps(feature)
 
-    async def recordsToFeatures(self,
-                            records: list,
-                            ) -> list:
-        """
-        Convert an asyncpg.Record to a GeoJson FeatureCollection.
+    async def recordsToFeatures(
+        self,
+        records: list,
+    ) -> list:
+        """Convert an asyncpg.Record to a GeoJson FeatureCollection.
 
         Args:
             records (list): The records from an SQL query
@@ -226,7 +225,7 @@ class DatabaseAccess(object):
                 elif entry[i] is not None:
                     props[keys[i]] = entry[i]
                 i += 1
-            data.append(Feature(geometry = geom, properties = props))
+            data.append(Feature(geometry=geom, properties=props))
 
         return data
 
@@ -406,8 +405,7 @@ class DatabaseAccess(object):
         self,
         sql: str,
     ) -> list:
-        """
-        Execute a raw SQL query and return the results.
+        """Execute a raw SQL query and return the results.
 
         Args:
             sql (str): The SQL to execute
@@ -417,16 +415,16 @@ class DatabaseAccess(object):
         """
         # print(sql)
         data = list()
-        if sql.find(';') <= 0:
+        if sql.find(";") <= 0:
             queries = [sql]
 
         async with self.pg.transaction():
             queries = list()
             # If using an SRID, we have to hide the sem-colon so the string
             # doesn't split in the wrong place.
-            cmds = sql.replace("SRID=4326;P", "SRID=4326@P").split(';')
+            cmds = sql.replace("SRID=4326;P", "SRID=4326@P").split(";")
             for sub in cmds:
-                queries.append(sub.replace('@', ';'))
+                queries.append(sub.replace("@", ";"))
                 continue
 
             for query in queries:
@@ -650,7 +648,7 @@ class PostgresClient(DatabaseAccess):
         if "geometry" in boundary:
             polygons.append(boundary["geometry"])
 
-        if boundary['type'] == "MultiPolygon":
+        if boundary["type"] == "MultiPolygon":
             # poly = boundary["features"][0]["geometry"]
             points = list()
             for coords in boundary["features"]["coordinates"]:
@@ -671,7 +669,7 @@ class PostgresClient(DatabaseAccess):
                 alldata = list()
                 queries = list()
                 if type(sql) != list:
-                    queries = sql.split(';')
+                    queries = sql.split(";")
                 else:
                     queries = sql
 
@@ -688,6 +686,7 @@ class PostgresClient(DatabaseAccess):
                 collection = await self.queryRemote(request)
 
         return collection
+
 
 async def main():
     """This main function lets this class be run standalone by a bash script."""
@@ -743,10 +742,10 @@ to define the are to be covered in the extract. Optionally a data file can be us
     if args.boundary:
         infile = open(args.boundary, "r")
         inpoly = geojson.load(infile)
-        if inpoly['type'] == "MultiPolygon":
+        if inpoly["type"] == "MultiPolygon":
             poly = FeatureCollection(inpoly)
     else:
-        log.error(f"A boundary file is needed!")
+        log.error("A boundary file is needed!")
 
     if args.uri is not None:
         log.info("Using a Postgres database for the data source")

@@ -283,8 +283,7 @@ class QueryConfig(object):
         return self.config
 
     def getKeys(self):
-        """
-        """
+        """ """
         keys = list()
         # The first column returned is always the geometry
         keys.append("geometry")

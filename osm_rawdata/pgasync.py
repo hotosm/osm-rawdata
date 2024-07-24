@@ -30,6 +30,7 @@ import zipfile
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlparse
+import flatdict
 
 import asyncpg
 import geojson
@@ -54,6 +55,7 @@ class DatabaseAccess(object):
         self.pg = None
         self.dburi = None
         self.qc = None
+        self.clipped = False
 
     async def connect(
         self,
@@ -199,6 +201,35 @@ class DatabaseAccess(object):
             feature["centroid"] = true
         return json.dumps(feature)
 
+    async def recordsToFeatures(self,
+                            records: list,
+                            ) -> list:
+        """
+        Convert an asyncpg.Record to a GeoJson FeatureCollection.
+
+        Args:
+            records (list): The records from an SQL query
+
+        Returns:
+            (list): The converted data
+        """
+        data = list()
+        keys = self.qc.getKeys()
+        for entry in records:
+            i = 0
+            geom = None
+            last = len(entry) - 1
+            props = dict()
+            while i <= last:
+                if keys[i] == "geometry":
+                    geom = wkt.loads(entry[i])
+                elif entry[i] is not None:
+                    props[keys[i]] = entry[i]
+                i += 1
+            data.append(Feature(geometry = geom, properties = props))
+
+        return data
+
     async def createSQL(
         self,
         config: QueryConfig,
@@ -218,12 +249,18 @@ class DatabaseAccess(object):
         for table in config.config["tables"]:
             select = "SELECT "
             if allgeom:
-                select += "ST_AsText(geom)"
+                select += "ST_AsText(geom) AS geometry"
             else:
-                select += "ST_AsText(ST_Centroid(geom))"
+                select += "ST_AsText(ST_Centroid(geom)) AS geometry"
+            # FIXME: This part is OSM specific, and should be made more
+            # general. these two columns are OSM attributes, so each
+            # have their own column in the database. All the other
+            # values are in a single JSON column.
             select += ", osm_id, version, "
             for entry in config.config["select"][table]:
                 for k1, v1 in entry.items():
+                    if k1 == "osm_id" or k1 == "version":
+                        continue
                     select += f"tags->>'{k1}', "
             select = select[:-2]
 
@@ -368,8 +405,9 @@ class DatabaseAccess(object):
     async def execute(
         self,
         sql: str,
-    ):
-        """Execute a raw SQL query and return the results.
+    ) -> list:
+        """
+        Execute a raw SQL query and return the results.
 
         Args:
             sql (str): The SQL to execute
@@ -378,13 +416,31 @@ class DatabaseAccess(object):
             (list): The results of the query
         """
         # print(sql)
+        data = list()
+        if sql.find(';') <= 0:
+            queries = [sql]
+
         async with self.pg.transaction():
-            try:
-                result = await self.pg.fetch(sql)
-                return result
-            except Exception as e:
-                log.error(f"Couldn't execute query! {e}\n{sql}")
-                return list()
+            queries = list()
+            # If using an SRID, we have to hide the sem-colon so the string
+            # doesn't split in the wrong place.
+            cmds = sql.replace("SRID=4326;P", "SRID=4326@P").split(';')
+            for sub in cmds:
+                queries.append(sub.replace('@', ';'))
+                continue
+
+            for query in queries:
+                try:
+                    # print(query)
+                    result = await self.pg.fetch(query)
+                    if len(result) > 0:
+                        data += result
+
+                except Exception as e:
+                    log.error(f"Couldn't execute query! {e}\n{query}")
+                    return list()
+
+        return data
 
     async def queryLocal(
         self,
@@ -404,15 +460,16 @@ class DatabaseAccess(object):
         """
         features = list()
         # if no boundary, it's already been setup
+        # if boundary and not self.clipped:
         if boundary:
             sql = f"DROP VIEW IF EXISTS ways_view;CREATE VIEW ways_view AS SELECT * FROM ways_poly WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
-            await self.execute(sql)
+            await self.pg.execute(sql)
             sql = f"DROP VIEW IF EXISTS nodes_view;CREATE VIEW nodes_view AS SELECT * FROM nodes WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
-            await self.execute(sql)
+            await self.pg.execute(sql)
             sql = f"DROP VIEW IF EXISTS lines_view;CREATE VIEW lines_view AS SELECT * FROM ways_line WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
-            await self.execute(sql)
-            sql = f"DROP VIEW IF EXISTS relations_view;CREATE TEMP VIEW relations_view AS SELECT * FROM nodes WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
-            await self.execute(sql)
+            await self.pg.execute(sql)
+            sql = f"DROP VIEW IF EXISTS relations_view;CREATE VIEW relations_view AS SELECT * FROM nodes WHERE ST_CONTAINS(ST_GeomFromEWKT('SRID=4326;{boundary.wkt}'), geom)"
+            await self.pg.execute(sql)
 
             if query.find(" ways_poly ") > 0:
                 query = query.replace("ways_poly", "ways_view")
@@ -467,6 +524,7 @@ class DatabaseAccess(object):
                 # This should be the version
                 tags[res[3][:-1]] = item[2]
             features.append(Feature(geometry=geom, properties=tags))
+
         return FeatureCollection(features)
         # return features
 
@@ -588,30 +646,48 @@ class PostgresClient(DatabaseAccess):
         """
         log.info("Extracting features from Postgres...")
 
-        if "features" in boundary:
-            # FIXME: ideally this should support multipolygons
-            poly = boundary["features"][0]["geometry"]
-        else:
-            poly = boundary["geometry"]
-        wkt = shape(poly)
+        polygons = list()
+        if "geometry" in boundary:
+            polygons.append(boundary["geometry"])
 
-        if not self.pg.is_closed():
-            if not customsql:
-                sql = await self.createSQL(self.qc, allgeom)
+        if boundary['type'] == "MultiPolygon":
+            # poly = boundary["features"][0]["geometry"]
+            points = list()
+            for coords in boundary["features"]["coordinates"]:
+                for pt in coords:
+                    for xy in pt:
+                        points.append([float(xy[0]), float(xy[1])])
+                poly = Polygon(points)
+                polygons.append(poly)
+
+        for poly in polygons:
+            wkt = shape(poly)
+
+            if not self.pg.is_closed():
+                if not customsql:
+                    sql = await self.createSQL(self.qc, allgeom)
+                else:
+                    sql = [customsql]
+                alldata = list()
+                queries = list()
+                if type(sql) != list:
+                    queries = sql.split(';')
+                else:
+                    queries = sql
+
+                for query in queries:
+                    # print(query)
+                    result = await self.queryLocal(query, allgeom, wkt)
+                    if len(result) > 0:
+                        # Some queries don't return any data, for example
+                        # when creating a VIEW.
+                        alldata += await self.recordsToFeatures(result)
+                collection = FeatureCollection(alldata)
             else:
-                sql = [customsql]
-            alldata = list()
-            for query in sql:
-                # print(query)
-                result = await self.queryLocal(query, allgeom, wkt)
-                if len(result) > 0:
-                    alldata += result["features"]
-            collection = FeatureCollection(alldata)
-        else:
-            request = await self.createJson(self.qc, poly, allgeom)
-            collection = await self.queryRemote(request)
-        return collection
+                request = await self.createJson(self.qc, poly, allgeom)
+                collection = await self.queryRemote(request)
 
+        return collection
 
 async def main():
     """This main function lets this class be run standalone by a bash script."""
@@ -664,15 +740,21 @@ to define the are to be covered in the extract. Optionally a data file can be us
         stream=sys.stdout,
     )
 
-    infile = open(args.boundary, "r")
-    poly = geojson.load(infile)
+    if args.boundary:
+        infile = open(args.boundary, "r")
+        inpoly = geojson.load(infile)
+        if inpoly['type'] == "MultiPolygon":
+            poly = FeatureCollection(inpoly)
+    else:
+        log.error(f"A boundary file is needed!")
+
     if args.uri is not None:
         log.info("Using a Postgres database for the data source")
         db = DatabaseAccess()
         await db.connect(args.uri)
-        result = await db.execute("SELECT * FROM nodes LIMIT 10;")
-        print(result)
-        quit()
+        # result = await db.execute("SELECT * FROM nodes LIMIT 10;")
+        # print(result)
+        # quit()
         # await db.connect(args.uri)
         # data = await db.pg.fetch("SELECT * FROM schemas LIMIT 10;")
         # print(data)
@@ -700,3 +782,5 @@ if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(main())
+
+# ./pgasync.py -u localhost/colorado -b /play/MapData/States/Colorado/Boundaries/NationalForest/MedicineBowNationalForest.geojson -c /usr/local/lib/python3.12/site-packages/osm_fieldwork/data_models/highways.yaml

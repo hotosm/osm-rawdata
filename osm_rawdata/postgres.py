@@ -322,12 +322,14 @@ class DatabaseAccess(object):
         for table in config.config["tables"]:
             select = "SELECT "
             if allgeom:
-                select += "ST_AsText(geom)"
+                select += "ST_AsText(geom) AS geometry"
             else:
-                select += "ST_AsText(ST_Centroid(geom))"
+                select += "ST_AsText(ST_Centroid(geom)) AS geometry"
             select += ", osm_id, version, "
             for entry in config.config["select"][table]:
                 for k1, v1 in entry.items():
+                    if k1 == "osm_id" or k1 == "version":
+                        continue
                     select += f"tags->>'{k1}', "
             select = select[:-2]
 

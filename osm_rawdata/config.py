@@ -60,12 +60,14 @@ class QueryConfig(object):
                 "nodes": [],
                 "ways_poly": [],
                 "ways_line": [],
+                "relations": [],
             },
             "tables": [],
             "where": {
                 "nodes": [],
                 "ways_poly": [],
                 "ways_line": [],
+                "relations": [],
             },
             "keep": [],
         }
@@ -279,6 +281,25 @@ class QueryConfig(object):
                     self.config["where"][geom_type].append(new_tag)
 
         return self.config
+
+    def getKeys(self):
+        """ """
+        keys = list()
+        # The first column returned is always the geometry
+        keys.append("geometry")
+        for key, value in self.config["select"].items():
+            if isinstance(value, list):
+                for v in value:
+                    if isinstance(v, str):
+                        # print(f"\tSelecting table '{key}' has value '{v}'")
+                        keys.append(v)
+                        continue
+                    for k1, v1 in v.items():
+                        keys.append(k1)
+                        # print(f"\tSelecting table '{key}' tag '{k1}'")
+            # else:
+            #     print(f"\tSelecting tag '{key}'")
+        return keys
 
     def dump(self):
         """Dump the contents of the internal data strucute for debugging purposes."""

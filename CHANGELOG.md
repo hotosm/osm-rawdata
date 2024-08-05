@@ -1,3 +1,16 @@
+## 0.3.1 (2024-08-05)
+
+### Fix
+
+- do not continue to poll raw-data-api on failure (#28)
+- Add AS geometry to make parsing the results cleaner, fix duplicate columns in SELECT (#25)
+- Fix typo, args.uri, not args.url (#22)
+- Process the refs for ways when using a local database (#20)
+
+### Refactor
+
+- revert default line length 132 --> 88 char
+
 ## 0.3.0 (2024-05-20)
 
 ### Feat

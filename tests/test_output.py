@@ -33,38 +33,29 @@ if os.path.basename(rootdir) == "osm_rawdata":
 
 
 def test_yaml():
-    hits = 0
     db = DatabaseAccess("underpass")
     infile = open(f"{rootdir}/AOI.geojson", "r")
     poly = geojson.load(infile)
     qc = QueryConfig()
     qc.parseYaml(f"{rootdir}/buildings.yaml")
     sql = db.createSQL(qc, True)
-    out = "SELECT ST_AsText(geom), osm_id, version, tags->>'building', tags->>'amenity', tags->>'building:material', tags->>'roof:material' FROM nodes WHERE tags->>'building' ='yes' OR tags->>'amenity' IS NOT NULL OR  tags->>'building:material' ='wood' AND tags->>'roof:material' ='metal'"
-    if sql[0] == out:
-        hits += 1
+    out = "SELECT ST_AsText(geom) AS geometry, osm_id, version, tags->>'building', tags->>'amenity', tags->>'building:material', tags->>'roof:material' FROM nodes WHERE tags->>'building' ='yes' OR tags->>'amenity' IS NOT NULL OR  tags->>'building:material' ='wood' AND tags->>'roof:material' ='metal'"
+    assert sql[0] == out
 
     qc = QueryConfig()
     json = db.createJson(qc, poly, True)
     geojson.loads(json)
-    #    import epdb ; epdb.st()
-    #    if json == out:
-    #        hits += 1
-
-    assert hits == 1
 
 
 def test_json():
-    hits = 0
     db = DatabaseAccess("underpass")
     infile = open(f"{rootdir}/AOI.geojson", "r")
     geojson.load(infile)
     qc = QueryConfig()
     qc.parseJson(f"{rootdir}/levels.json")
     sql = db.createSQL(qc, True)
-    out = "SELECT ST_AsText(geom), osm_id, version, tags->>'building', tags->>'ground_floor:height', tags->>'capacity:persons', tags->>'building:structure', tags->>'building:condition', tags->>'name', tags->>'admin_level', tags->>'building:material', tags->>'office', tags->>'building:roof', tags->>'backup_generator', tags->>'access:roof', tags->>'building:levels', tags->>'building:floor', tags->>'addr:full', tags->>'addr:city', tags->>'source' FROM nodes WHERE tags->>'amenity'  IN ('bank', 'ferry_terminal', 'bus_station', 'fuel', 'kindergarten', 'school', 'college', 'university', 'place_of_worship', 'marketplace', 'clinic', 'hospital', 'police', 'fire_station') OR tags->>'building'  IN ('bank', 'aerodrome', 'ferry_terminal', 'train_station', 'bus_station', 'pumping_station', 'power_substation', 'kindergarten', 'school', 'college', 'university', 'mosque', 'church', 'temple', 'supermarket', 'marketplace', 'clinic', 'hospital', 'police', 'fire_station', 'stadium ', 'sports_centre', 'governor_office ', 'townhall ', 'subdistrict_office ', 'village_office ', 'community_group_office', 'government_office') OR tags->>'man_made'  IN ('tower', 'water_tower', 'pumping_station') OR tags->>'tower' ='communication' OR tags->>'aeroway' ='aerodrome' OR tags->>'railway' ='station' OR tags->>'emergency' ='fire_hydrant' OR tags->>'landuse'  IN ('reservoir', 'recreation_gound') OR tags->>'waterway' ='floodgate' OR tags->>'natural' ='spring' OR tags->>'power'  IN ('tower', 'substation') OR tags->>'shop' ='supermarket' OR tags->>'leisure'  IN ('stadium ', ' sports_centre ', ' pitch ', ' swimming_pool', 'park') OR tags->>'office' ='government'"
-    if sql[0] == out:
-        hits += 1
+    out = "SELECT ST_AsText(geom) AS geometry, osm_id, version, tags->>'building', tags->>'ground_floor:height', tags->>'capacity:persons', tags->>'building:structure', tags->>'building:condition', tags->>'name', tags->>'admin_level', tags->>'building:material', tags->>'office', tags->>'building:roof', tags->>'backup_generator', tags->>'access:roof', tags->>'building:levels', tags->>'building:floor', tags->>'addr:full', tags->>'addr:city', tags->>'source' FROM nodes WHERE tags->>'amenity'  IN ('bank', 'ferry_terminal', 'bus_station', 'fuel', 'kindergarten', 'school', 'college', 'university', 'place_of_worship', 'marketplace', 'clinic', 'hospital', 'police', 'fire_station') OR tags->>'building'  IN ('bank', 'aerodrome', 'ferry_terminal', 'train_station', 'bus_station', 'pumping_station', 'power_substation', 'kindergarten', 'school', 'college', 'university', 'mosque', 'church', 'temple', 'supermarket', 'marketplace', 'clinic', 'hospital', 'police', 'fire_station', 'stadium ', 'sports_centre', 'governor_office ', 'townhall ', 'subdistrict_office ', 'village_office ', 'community_group_office', 'government_office') OR tags->>'man_made'  IN ('tower', 'water_tower', 'pumping_station') OR tags->>'tower' ='communication' OR tags->>'aeroway' ='aerodrome' OR tags->>'railway' ='station' OR tags->>'emergency' ='fire_hydrant' OR tags->>'landuse'  IN ('reservoir', 'recreation_gound') OR tags->>'waterway' ='floodgate' OR tags->>'natural' ='spring' OR tags->>'power'  IN ('tower', 'substation') OR tags->>'shop' ='supermarket' OR tags->>'leisure'  IN ('stadium ', ' sports_centre ', ' pitch ', ' swimming_pool', 'park') OR tags->>'office' ='government'"
+    assert sql[0] == out
 
     qc.parseJson(f"{rootdir}/levels.json")
     json = db.createJson(qc, True)
@@ -85,10 +76,7 @@ def test_json():
         "police",
         "fire_station",
     ]
-    if item == new["filters"]["tags"]["point"]["join_or"]["amenity"]:
-        hits += 1
-
-    assert hits == 2
+    assert item == new["filters"]["tags"]["point"]["join_or"]["amenity"]
 
 
 if __name__ == "__main__":

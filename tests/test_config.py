@@ -105,11 +105,13 @@ def test_yaml_no_joins():
     qc.parseYaml(f"{rootdir}/buildings_no_join.yaml")
 
     selected = qc.config["select"]
-    assert len(selected.keys()) == 3
+    # Keys: nodes, ways_poly, ways_line, relationships
+    assert len(selected.keys()) == 4
     assert len(list(selected.values())[0]) == 4
 
+    # Keys: nodes, ways_poly, ways_line, relationships
     where = qc.config["where"]
-    assert len(where.keys()) == 3
+    assert len(where.keys()) == 4
 
     nodes = list(where.values())[0]
     assert len(nodes) == 4
@@ -129,11 +131,11 @@ def test_yaml_no_joins_bytesio():
     qc.parseYaml(yaml_obj)
 
     selected = qc.config["select"]
-    assert len(selected.keys()) == 3
+    assert len(selected.keys()) == 4
     assert len(list(selected.values())[0]) == 4
 
     where = qc.config["where"]
-    assert len(where.keys()) == 3
+    assert len(where.keys()) == 4
 
     nodes = list(where.values())[0]
     assert len(nodes) == 4
@@ -169,6 +171,7 @@ def test_yaml_bytesio_from_string():
             "nodes": [{"building": {}}, {"highway": {}}, {"waterway": {}}],
             "ways_poly": [{"building": {}}, {"highway": {}}, {"waterway": {}}],
             "ways_line": [{"building": {}}, {"highway": {}}, {"waterway": {}}],
+            "relations": [],
         },
         "tables": ["nodes", "ways_poly", "ways_line"],
         "where": {
@@ -187,9 +190,11 @@ def test_yaml_bytesio_from_string():
                 {"highway": ["not null"], "op": "or"},
                 {"waterway": ["not null"], "op": "or"},
             ],
+            "relations": [],
         },
         "keep": [],
     }
+    print(config)
     assert config == expected_config
 
 

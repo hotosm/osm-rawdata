@@ -563,7 +563,7 @@ class DatabaseAccess(object):
             return None
 
         task_id = result.json().get("task_id")
-        task_query_url = f"{self.url}/tasks/status/{task_id}"
+        task_query_url = f"{self.uri}/tasks/status/{task_id}"
         log.debug(f"Raw Data API Query URL: {task_query_url}")
 
         polling_interval = 2  # Initial polling interval in seconds

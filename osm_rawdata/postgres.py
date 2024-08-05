@@ -582,6 +582,8 @@ class DatabaseAccess(object):
 
             # First check to see if FAILURE and stop polling
             if response_status == "FAILURE":
+                # NOTE bug we must override task_info as it's set to a string
+                task_info = {}
                 break
 
             # response_status options: STARTED, PENDING, SUCCESS

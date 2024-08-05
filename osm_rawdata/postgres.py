@@ -580,6 +580,10 @@ class DatabaseAccess(object):
 
             log.debug(f"Current status: {response_status}")
 
+            # First check to see if FAILURE and stop polling
+            if response_status == "FAILURE":
+                break
+
             # response_status options: STARTED, PENDING, SUCCESS
             if (
                 response_status != "SUCCESS"

@@ -64,7 +64,12 @@ plugins:
 
 nav:
   - Home: index.md
-  - About: about.md
+  - Get Started:
+      - About: about.md
+      - License: LICENSE.md
+      - Changelog: CHANGELOG.md
+      - Code of Conduct: https://docs.hotosm.org/code-of-conduct
+      - Versioning: https://docs.hotosm.org/dev-guide/repo-management/version-control/#creating-releases
   - Utilities:
       - Importer: importer.md
       - Postgres: postgres.md
@@ -75,7 +80,3 @@ nav:
       - YAML: yaml.md
       - Overture: overture.md
   - API: api.md
-  - License: LICENSE.md
-  - Changelog: CHANGELOG.md
-  - Code of Conduct: https://docs.hotosm.org/code-of-conduct
-  - Versioning: https://docs.hotosm.org/dev-guide/version-control/#creating-releases

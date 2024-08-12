@@ -1,0 +1,11 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,132,68,159"/>
+<area shape="rect" id="node2" href="$classconfig_1_1QueryConfig.html" title=" " alt="" coords="138,5,283,32"/>
+<area shape="rect" id="node3" href="$classgeofabrik_1_1GeoFabrik.html" title=" " alt="" coords="134,56,287,83"/>
+<area shape="rect" id="node4" href="$classimporter_1_1MapImporter.html" title=" " alt="" coords="128,107,293,133"/>
+<area shape="rect" id="node5" href="$classoverture_1_1Overture.html" title=" " alt="" coords="141,157,280,184"/>
+<area shape="rect" id="node6" href="$classpgasync_1_1DatabaseAccess.html" title=" " alt="" coords="117,208,304,235"/>
+<area shape="rect" id="node8" href="$classpostgres_1_1DatabaseAccess.html" title=" " alt="" coords="116,259,305,285"/>
+<area shape="rect" id="node7" href="$classpgasync_1_1PostgresClient.html" title=" " alt="" coords="354,208,529,235"/>
+<area shape="rect" id="node9" href="$classpostgres_1_1PostgresClient.html" title=" " alt="" coords="353,259,529,285"/>
+</map>

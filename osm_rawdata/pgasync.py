@@ -557,13 +557,13 @@ class DatabaseAccess(object):
         result = self.session.get(zip, headers=self.headers)
         fp = BytesIO(result.content)
         zfp = zipfile.ZipFile(fp, "r")
-        zfp.extract("Export.geojson", "/tmp/")
+        zfp.extract("RawExport.geojson", "/tmp/")
         # Now take that taskid and hit /tasks/status url with get
-        data = zfp.read("Export.geojson")
-        os.remove("/tmp/Export.geojson")
+        data = zfp.read("RawExport.geojson")
+        os.remove("/tmp/RawExport.geojson")
         return json.loads(data)
 
-    #   return zfp.read("Export.geojson")
+    #   return zfp.read("RawExport.geojson")
 
 
 class PostgresClient(DatabaseAccess):

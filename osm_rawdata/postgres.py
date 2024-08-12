@@ -624,10 +624,10 @@ class DatabaseAccess(object):
         if not data_url.endswith(".zip"):
             return data_url
 
-        # Extract filename is set, else use Export.geojson
+        # Extract filename is set, else use RawExport.geojson
         query_dict = json.loads(query)
         file_type = query_dict.get("outputType", "geojson")
-        filename = f"{query_dict.get('fileName', 'Export')}.{file_type}"
+        filename = f"{query_dict.get('fileName', 'RawExport')}.{file_type}"
         # Get zip file and extract
         with self.session.get(data_url, headers=self.headers) as response:
             buffer = BytesIO(response.content)

@@ -1,3 +1,11 @@
+## 0.3.2 (2024-08-12)
+
+### Fix
+
+- raw-data-api changed Export.geojson --> RawExport.geojson (#30)
+- allow raw-data-api call to return if FAILURE response
+- param spelling mistake PostgresClient.url --> .uri
+
 ## 0.3.1 (2024-08-05)
 
 ### Fix

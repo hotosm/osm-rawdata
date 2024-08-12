@@ -434,9 +434,9 @@ class DatabaseAccess(object):
                     if len(result) > 0:
                         data += result
 
-            except Exception as e:
+                except Exception as e:
                     log.error(f"Couldn't execute query! {e}\n{query}")
-                return list()
+                    return list()
 
         return data
 
@@ -659,14 +659,14 @@ class PostgresClient(DatabaseAccess):
                 polygons.append(poly)
 
         for poly in polygons:
-        wkt = shape(poly)
+            wkt = shape(poly)
 
-        if not self.pg.is_closed():
-            if not customsql:
-                sql = await self.createSQL(self.qc, allgeom)
-            else:
-                sql = [customsql]
-            alldata = list()
+            if not self.pg.is_closed():
+                if not customsql:
+                    sql = await self.createSQL(self.qc, allgeom)
+                else:
+                    sql = [customsql]
+                alldata = list()
                 queries = list()
                 if type(sql) != list:
                     queries = sql.split(";")
@@ -674,16 +674,16 @@ class PostgresClient(DatabaseAccess):
                     queries = sql
 
                 for query in queries:
-                # print(query)
-                result = await self.queryLocal(query, allgeom, wkt)
-                if len(result) > 0:
+                    # print(query)
+                    result = await self.queryLocal(query, allgeom, wkt)
+                    if len(result) > 0:
                         # Some queries don't return any data, for example
                         # when creating a VIEW.
                         alldata += await self.recordsToFeatures(result)
-            collection = FeatureCollection(alldata)
-        else:
-            request = await self.createJson(self.qc, poly, allgeom)
-            collection = await self.queryRemote(request)
+                collection = FeatureCollection(alldata)
+            else:
+                request = await self.createJson(self.qc, poly, allgeom)
+                collection = await self.queryRemote(request)
 
         return collection
 
@@ -740,7 +740,7 @@ to define the are to be covered in the extract. Optionally a data file can be us
     )
 
     if args.boundary:
-    infile = open(args.boundary, "r")
+        infile = open(args.boundary, "r")
         inpoly = geojson.load(infile)
         if inpoly["type"] == "MultiPolygon":
             poly = FeatureCollection(inpoly)

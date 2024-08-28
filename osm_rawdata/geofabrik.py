@@ -106,7 +106,8 @@ def main():
             )
             quit()
 
-        uri = f"http://download.geofabrik.de/{region.lower()}/{args.file.lower()}-latest.osm.pbf"
+        uri = f"http://download.geofabrik.de/{region.lower().replace(" ","-")}/{args.file.lower()}-latest.osm.pbf"
+        print(uri)
         outfile = f"./{args.file}-latest.osm.pbf"
         try:
             dl = SmartDL(uri, dest=outfile, connect_default_logger=False)

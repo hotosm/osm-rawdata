@@ -1,3 +1,13 @@
+## 0.3.3 (2024-10-14)
+
+### Fix
+
+- geofabrik hyphenated region path (#33)
+
+### Refactor
+
+- move raw-data import related scripts to subdir
+
 ## 0.3.2 (2024-08-12)
 
 ### Fix

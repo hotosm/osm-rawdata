@@ -25,8 +25,6 @@ import pandas as pd
 from codetiming import Timer
 from geojson import Feature, FeatureCollection
 from numpy import ndarray
-
-# import pyarrow as pa
 from pandas import Series
 from progress.spinner import PixelSpinner
 from shapely import wkb

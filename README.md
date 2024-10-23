@@ -67,6 +67,12 @@ To install osm-rawdata, you can use pip. Here are two options:
 - Latest on PyPi:
   `pip install osm-rawdata`
 
+- Including the packages required for `importer.py`:
+  `pip install osm-rawdata[importer]`
+
+> NOTE that importer.py will not work unless the extra dependencies
+> are specified using osm-rawdata[importer]
+
 ## Using the Container Image
 
 - osm-rawdata scripts can be used via the pre-built container images.

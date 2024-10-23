@@ -11,10 +11,6 @@ dependencies = [
     "requests>=2.26.0",
     "shapely>=1.8.1",
     "geojson>=2.5.0",
-    "pyarrow>=14.0.1",
-    "sqlalchemy>=2.0.0",
-    "GeoAlchemy2>=0.11.0",
-    "SQLAlchemy-Utils>=0.38.3",
     "psycopg2>=2.9.1",
     "flatdict>=4.0.1",
 ]
@@ -64,6 +60,11 @@ version = {from = "osm_rawdata/__version__.py"}
 includes = ["osm_rawdata"]
 source-includes = ["LICENSE.md", "README.md"]
 [tool.pdm.dev-dependencies]
+importer = [
+    "sqlalchemy>=2.0.0",
+    "GeoAlchemy2>=0.11.0",
+    "SQLAlchemy-Utils>=0.38.3",
+]
 dev = [
     "commitizen>=3.6.0",
     "pre-commit>=3.3.3",

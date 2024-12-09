@@ -36,8 +36,8 @@ import psycopg2
 import requests
 from geojson import Feature, FeatureCollection
 from geojson import Polygon as GeojsonPolygon
-from shapely import to_geojson, wkt
-from shapely.geometry import Polygon, shape
+from shapely import wkt
+from shapely.geometry import MultiPolygon, Polygon, mapping, shape
 from shapely.ops import unary_union
 
 # Find the other files for this project
@@ -759,15 +759,20 @@ class PostgresClient(DatabaseAccess):
                 shape(feature.get("geometry"))
                 for feature in boundary.get("features", [])
             ]
-            merged_geom = unary_union(geometries)
+            merged_geom = (
+                unary_union(geometries) if len(geometries) > 1 else geometries[0]
+            )
         elif geom_type == "Feature":
             merged_geom = shape(boundary.get("geometry"))
         else:
             merged_geom = shape(boundary)
 
-        # Convert the merged geoms to a single Polygon GeoJSON using convex hull
-        aoi_polygon = json.loads(to_geojson(merged_geom.convex_hull))
-        aoi_shape = shape(aoi_polygon)
+        if isinstance(merged_geom, MultiPolygon):
+            aoi_shape = MultiPolygon(
+                [Polygon(poly.exterior) for poly in merged_geom.geoms]
+            )
+        elif isinstance(merged_geom, Polygon):
+            aoi_shape = Polygon(merged_geom.exterior)
 
         if self.dbshell:
             log.info("Extracting features from Postgres...")
@@ -784,7 +789,9 @@ class PostgresClient(DatabaseAccess):
             collection = FeatureCollection(alldata)
         else:
             log.info("Extracting features via remote call...")
-            json_config = self.createJson(self.qc, aoi_polygon, allgeom, extra_params)
+            json_config = self.createJson(
+                self.qc, mapping(merged_geom), allgeom, extra_params
+            )
             collection = self.queryRemote(json_config)
             # bind_zip=False, data is not zipped, return URL directly
             if not json.loads(json_config).get("bind_zip", True):

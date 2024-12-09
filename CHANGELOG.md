@@ -1,3 +1,9 @@
+## 0.4.1 (2024-12-09)
+
+### Fix
+
+- remove convex hull to avoid getting features outside aoi (#41)
+
 ## 0.4.0 (2024-10-24)
 
 ## 0.3.3 (2024-10-14)

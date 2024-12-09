@@ -18,7 +18,7 @@
 
 PACKAGE := org.osm_rawdata.py
 NAME := osm-rawdata
-VERSION := 0.4.0
+VERSION := 0.4.1
 
 # All python source files
 # MDS := $(wildcard ./docs/*.md)

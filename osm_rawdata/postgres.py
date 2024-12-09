@@ -409,17 +409,13 @@ class DatabaseAccess(object):
         """Create a table in the database
 
         Args:
-            sqlfile (str): The SQL
+            sql (str): The SQL
 
         Returns:
             (bool): The table creation status
         """
         log.info("Creating table schema")
         result = self.dbcursor.execute(sql)
-
-        # path = Path(sqlfile)
-        # sql = f"INSERT INTO schemas(schema, version) VALUES('{sqlfile.stem}', 1.0)"
-        # result = self.pg.dbcursor.execute(sql)
 
         return True
 

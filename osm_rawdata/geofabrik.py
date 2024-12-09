@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2022 Humanitarian OpenStreetMap Team
+# Copyright (c) Humanitarian OpenStreetMap Team
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -22,10 +22,9 @@
 import argparse
 import logging
 import sys
-from sys import argv
 
+import requests
 import yaml
-from pySmartDL import SmartDL
 
 # Find the other files for this project
 import osm_rawdata as rw
@@ -42,9 +41,9 @@ class GeoFabrik(object):
         filespec = f"{rootdir}/geofabrik.yaml"
         try:
             file = open(filespec, "rb").read()
-        except:
-            print(argv)
-            log.error(f"Couldn't open {filespec}")
+        except Exception as e:
+            print(sys.argv)
+            log.error(f"Couldn't open {filespec}: {e}")
             quit()
         self.regions = yaml.load(file, Loader=yaml.Loader)
 
@@ -52,7 +51,7 @@ class GeoFabrik(object):
         for entry in self.regions:
             [[k, v]] = entry.items()
             print(f"Region: {k}")
-            if type(v) == list:
+            if isinstance(v, list):
                 for i in v:
                     print(f"\t{i}")
             print("")
@@ -60,11 +59,29 @@ class GeoFabrik(object):
     def getRegion(self, region: str):
         for entry in self.regions:
             [[k, v]] = entry.items()
-            if type(v) == list:
+            if isinstance(v, list):
                 for i in v:
-                    if i == region:
+                    if i.lower() == region.lower():
                         return k
         return None
+
+
+def download_file(url, dest):
+    try:
+        with requests.get(url, stream=True) as r:
+            r.raise_for_status()
+            total_size = int(r.headers.get("content-length", 0))
+            with open(dest, "wb") as f:
+                downloaded = 0
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        percent_done = (downloaded / total_size) * 100
+                        print(f"\rDownloading: {percent_done:.2f}%", end="")
+        print("\nDownload completed.")
+    except Exception as e:
+        log.error(f"Failed to download {url}: {e}")
 
 
 def main():
@@ -77,7 +94,7 @@ def main():
     )
     args = parser.parse_args()
 
-    if len(argv) <= 1:
+    if len(sys.argv) <= 1:
         parser.print_help()
         quit()
 
@@ -106,14 +123,10 @@ def main():
             )
             quit()
 
-        uri = f"http://download.geofabrik.de/{region.lower().replace(" ","-")}/{args.file.lower()}-latest.osm.pbf"
+        uri = f"http://download.geofabrik.de/{region.lower().replace(' ', '-')}/{args.file.lower()}-latest.osm.pbf"
         print(uri)
         outfile = f"./{args.file}-latest.osm.pbf"
-        try:
-            dl = SmartDL(uri, dest=outfile, connect_default_logger=False)
-            dl.start()
-        except:
-            logging.error(f"Couldn't download from {outfile}: {dl.get_errors()}")
+        download_file(uri, outfile)
 
 
 if __name__ == "__main__":

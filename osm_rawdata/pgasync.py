@@ -85,7 +85,7 @@ class DatabaseAccess(object):
 
         slash = uri.path.find("/")
         self.dburi["dbname"] = uri.path[slash + 1 :]
-        connect = f"postgres://{self.dburi['dbuser']}:{ self.dburi['dbpass']}@{self.dburi['dbhost']}/{self.dburi['dbname']}"
+        connect = f"postgres://{self.dburi['dbuser']}:{self.dburi['dbpass']}@{self.dburi['dbhost']}/{self.dburi['dbname']}"
 
         if self.dburi["dbname"] == "underpass":
             # Authentication data

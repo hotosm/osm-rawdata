@@ -1,3 +1,10 @@
+## 0.4.2 (2025-02-03)
+
+### Fix
+
+- extra log info on raw-data-api FAILURE response
+- replace pysmartdl with requests-based geofabrik download
+
 ## 0.4.1 (2024-12-09)
 
 ### Fix

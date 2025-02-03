@@ -1,0 +1,19 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,129,68,155"/>
+<area shape="rect" id="Node000001" href="$classconfig_1_1QueryConfig.html" title=" " alt="" coords="138,5,283,31"/>
+<area shape="poly" id="edge10_Node000000_Node000001" title=" " alt="" coords="49,115,76,76,94,56,115,40,138,28,140,33,117,44,97,60,80,80,53,118"/>
+<area shape="rect" id="Node000002" href="$classgeofabrik_1_1GeoFabrik.html" title=" " alt="" coords="134,55,287,80"/>
+<area shape="poly" id="edge11_Node000000_Node000002" title=" " alt="" coords="64,119,115,89,147,78,149,83,117,94,67,123"/>
+<area shape="rect" id="Node000003" href="$classimporter_1_1MapImporter.html" title=" " alt="" coords="128,104,293,129"/>
+<area shape="poly" id="edge12_Node000000_Node000003" title=" " alt="" coords="81,133,128,126,128,131,82,138"/>
+<area shape="rect" id="Node000004" href="$classoverture_1_1Overture.html" title=" " alt="" coords="141,153,280,179"/>
+<area shape="poly" id="edge13_Node000000_Node000004" title=" " alt="" coords="82,146,141,154,141,159,82,151"/>
+<area shape="rect" id="Node000005" href="$classpgasync_1_1DatabaseAccess.html" title=" " alt="" coords="117,203,304,228"/>
+<area shape="poly" id="edge14_Node000000_Node000005" title=" " alt="" coords="68,160,117,188,153,200,151,205,115,192,66,165"/>
+<area shape="rect" id="Node000007" href="$classpostgres_1_1DatabaseAccess.html" title=" " alt="" coords="116,252,305,277"/>
+<area shape="poly" id="edge16_Node000000_Node000007" title=" " alt="" coords="54,165,80,203,98,221,117,237,143,249,141,254,115,242,94,225,76,206,49,168"/>
+<area shape="rect" id="Node000006" href="$classpgasync_1_1PostgresClient.html" title=" " alt="" coords="354,203,529,228"/>
+<area shape="poly" id="edge15_Node000005_Node000006" title=" " alt="" coords="318,213,354,213,354,218,318,218"/>
+<area shape="rect" id="Node000008" href="$classpostgres_1_1PostgresClient.html" title=" " alt="" coords="353,252,529,277"/>
+<area shape="poly" id="edge17_Node000007_Node000008" title=" " alt="" coords="319,262,353,262,353,267,319,267"/>
+</map>

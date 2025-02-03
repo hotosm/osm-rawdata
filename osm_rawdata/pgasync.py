@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2024 Humanitarian OpenStreetMap Team
+# Copyright (c) Humanitarian OpenStreetMap Team
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -18,6 +18,8 @@
 # Humanitarian OpenStreetmap Team
 # 1100 13th Street NW Suite 800 Washington, D.C. 20005
 # <info@hotosm.org>
+
+# NOTE this module may be out of sync with postgres.py
 
 import argparse
 import asyncio

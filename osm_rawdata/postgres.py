@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2022, 2023, 2024 Humanitarian OpenStreetMap Team
+# Copyright (c) Humanitarian OpenStreetMap Team
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -580,6 +580,7 @@ class DatabaseAccess(object):
             if response_status == "FAILURE":
                 # NOTE bug we must override task_info as it's set to a string
                 task_info = {}
+                log.error(f"Raw-data-api task FAILURE. Details: {task_query_url}")
                 break
 
             # response_status options: STARTED, PENDING, SUCCESS
@@ -749,6 +750,7 @@ class PostgresClient(DatabaseAccess):
         if isinstance(boundary, str):
             boundary = json.loads(boundary)
 
+        # If multiple geoms are passed, unary_union them
         if (geom_type := boundary.get("type")) == "FeatureCollection":
             # Convert each feature into a Shapely geometry
             geometries = [
@@ -763,14 +765,15 @@ class PostgresClient(DatabaseAccess):
         else:
             merged_geom = shape(boundary)
 
-        if isinstance(merged_geom, MultiPolygon):
-            aoi_shape = MultiPolygon(
-                [Polygon(poly.exterior) for poly in merged_geom.geoms]
-            )
-        elif isinstance(merged_geom, Polygon):
-            aoi_shape = Polygon(merged_geom.exterior)
-
         if self.dbshell:
+            # If a multipolygon is passed, attempt a merge
+            if isinstance(merged_geom, MultiPolygon):
+                aoi_shape = MultiPolygon(
+                    [Polygon(poly.exterior) for poly in merged_geom.geoms]
+                )
+            elif isinstance(merged_geom, Polygon):
+                aoi_shape = Polygon(merged_geom.exterior)
+
             log.info("Extracting features from Postgres...")
             if not customsql:
                 sql = self.createSQL(self.qc, allgeom)

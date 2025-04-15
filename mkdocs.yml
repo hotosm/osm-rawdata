@@ -74,7 +74,6 @@ nav:
       - Importer: importer.md
       - Postgres: postgres.md
       - Geofabrik: geofabrik.md
-      - Overture: overture.md
   - File Formats:
       - JSON: json.md
       - YAML: yaml.md

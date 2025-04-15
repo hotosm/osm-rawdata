@@ -1,7 +1,7 @@
 # importer.py
 
-Import data into a postgres database that is using the Uunderpass
-schema. Currenly only loading Parquet files from Overture is
+Import data into a postgres database that is using the Underpass
+schema. Currently only loading Parquet files from Overture is
 supported.
 
 ## Example

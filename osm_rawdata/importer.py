@@ -41,14 +41,14 @@ from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists
 
+import osm_rawdata as od
+
 # Find the other files for this project
-import osm_rawdata as rw
 import osm_rawdata.db_models
 from osm_rawdata.db_models import Base
 from osm_rawdata.overture import Overture
 from osm_rawdata.postgres import uriParser
 
-import osm_rawdata as od
 rootdir = od.__path__[0]
 
 #

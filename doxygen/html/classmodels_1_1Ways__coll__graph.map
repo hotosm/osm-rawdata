@@ -1,0 +1,9 @@
+<map id="models.Ways" name="models.Ways">
+<area shape="rect" id="Node000001" title=" " alt="" coords="74,321,175,387"/>
+<area shape="rect" id="Node000002" href="$classmodels_1_1Base.html" title=" " alt="" coords="75,207,174,272"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="127,286,127,321,122,321,122,286"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,127,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="82,83,118,205,113,207,77,85"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="151,5,215,71"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="177,72,141,191,136,190,171,70"/>
+</map>

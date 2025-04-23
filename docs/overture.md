@@ -40,16 +40,16 @@ less columns in it, and each data type had a schema oriented towards
 that data type. The new schema (Oct 2023) is larger, but all the data
 types are supported in the same schema.
 
-The schema used in the Overture data files is [documented here](https://docs.overturemaps.org/reference). This document is just a
-summary with some implementation details.
+The schema used in the Overture data files is [documented here](https://docs.overturemaps.org/schema/reference/).
+This document is just a summary with some implementation details.
 
 ### Buildings
 
 The current coverage area is primarily the US, with New Zealand, and
-some random citites in Europe like Berlin. This is excluding the
+some random cities in Europe like Berlin. This is excluding the
 OpenStreetMap and Microsoft ML Buildings, which do have global
 coverage. But as those are available from other sources, which will
-often be more up to data than the Overture anyway. Conflation reguires
+often be more up to data than the Overture anyway. Conflation requires
 fresh data.
 
 The data appears to not be processed for duplicates or bad geometries,

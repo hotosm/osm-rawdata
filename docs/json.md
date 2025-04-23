@@ -10,7 +10,7 @@ format used by those tools.
 ## Geometry
 
 This is a GeoJson geometry that defines the project boundary. Since
-the datbase is huge, this limits the area the query is performed in.
+the database is huge, this limits the area the query is performed in.
 
 ## Filters
 
@@ -33,11 +33,11 @@ of all the geometries. The default is false if this is not present.
 
 # Example
 
-Unlike the [YAML](yaml) format that generates an SQL query, the raw
-data API wants this JSON file. This can be generated however from the
-YAML config file. If used as a config file, an identical version is
-generated from the parsed config data. This way it can be used for
-both input and output.
+Unlike the [YAML](https://hotosm.github.io/osm-rawdata/yaml/) format
+that generates an SQL query, the raw data API wants this JSON file.
+This can be generated however from the YAML config file. If used as
+a config file, an identical version is generated from the parsed
+config data. This way it can be used for both input and output.
 
 This config file is for highway extracts.
 

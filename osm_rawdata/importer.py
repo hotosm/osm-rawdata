@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2022, 2023 Humanitarian OpenStreetMap Team
+# Copyright (c) 2022, 2023, 2024, 2025 Humanitarian OpenStreetMap Team
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -41,15 +41,17 @@ from sqlalchemy.engine.base import Connection
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import create_database, database_exists
 
+import osm_rawdata as od
+
 # Find the other files for this project
-import osm_rawdata as rw
 import osm_rawdata.db_models
 from osm_rawdata.db_models import Base
 from osm_rawdata.overture import Overture
 from osm_rawdata.postgres import uriParser
 
-rootdir = rw.__path__[0]
+rootdir = od.__path__[0]
 
+#
 # Instantiate logger
 log = logging.getLogger("osm-rawdata")
 
@@ -290,7 +292,7 @@ class MapImporter(object):
                 "--extra-attributes",
                 "--output=flex",
                 "--style",
-                f"{rootdir}/raw_with_ref.lua",
+                f"{rootdir}/import/raw.lua",
                 f"{infile}",
             ]
         )

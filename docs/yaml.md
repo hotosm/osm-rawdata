@@ -2,7 +2,7 @@
 
 The YAML format is simpler than the JSON one, and is the format used
 by the [osm-fieldwork](https://pypi.org/project/osm-fieldwork/)
-project and [the FMTM](https://github.com/hotosm/fmtm) project for use
+project and [the FMTM](https://github.com/hotosm/field-tm) project for use
 in field data collection. This is used for canned datbase queires that
 are used to make data extracts for ODK Collect.
 
@@ -43,7 +43,7 @@ The tags in the keep field are the ones we want returned in the SQL
 query, but aren't part of the where section. Othwise they fail to
 appear in the results.
 
-# Example
+## Example
 
 This config file is for building extracts.
 

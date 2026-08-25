@@ -243,21 +243,30 @@ class DatabaseAccess(object):
             "tags": {},
         }
 
-        # FIXME handle all_geometry key
-        # FIXME requires updates to parseJson logic
-        # # Check if all geometry types are present
-        # all_geometry_types = all(geom_type in self._get_geometry_types(config) for geom_type in ['point', 'line', 'polygon'])
+        # Check whether this config actually came from a single all_geometry
+        # filter, rather than just happening to have data for all three
+        # geometry types. Presence alone isn't enough to tell apart -- e.g.
+        # a config can legitimately have different tag selections per
+        # geometry type. Only collapse when the where-conditions are
+        # identical across all three tables, which is what parseJson
+        # produces for a genuine all_geometry input.
+        where = config.config.get("where", {})
+        nodes_where = where.get("nodes", [])
+        all_geometry_types = bool(nodes_where) and nodes_where == where.get(
+            "ways_poly", []
+        ) == where.get("ways_line", [])
 
-        # if all_geometry_types:
-        #     # All geometries
-        #     all_geometry_filters = {"join_or": {}}
-        #     # Extract filters from config["where"]
-        #     for table, conditions in config.config["where"].items():
-        #         for condition in conditions:
-        #             key, _ = list(condition.items())[0]  # Extract the filter key
-        #             all_geometry_filters["join_or"][key] = []
-        #     filters["tags"]["all_geometry"] = all_geometry_filters
-        # else:
+        if all_geometry_types:
+            # All geometries: a single combined filter, instead of duplicating
+            # the same tags across separate point/line/polygon filters
+            all_geometry_filters = {"join_or": {}}
+            # Extract filters from config["where"]
+            for _table, conditions in config.config["where"].items():
+                for condition in conditions:
+                    key, _ = list(condition.items())[0]  # Extract the filter key
+                    all_geometry_filters["join_or"][key] = []
+            filters["tags"]["all_geometry"] = all_geometry_filters
+            return filters
 
         # Specific geometry types
         filters["tags"]["point"] = {"join_or": {}, "join_and": {}}
@@ -773,6 +782,14 @@ class PostgresClient(DatabaseAccess):
                 )
             elif isinstance(merged_geom, Polygon):
                 aoi_shape = Polygon(merged_geom.exterior)
+            else:
+                raise ValueError(
+                    f"AOI boundary must be a Polygon or MultiPolygon after "
+                    f"merging, got {type(merged_geom).__name__} instead. "
+                    f"This usually means mixed geometry types (e.g. a Point "
+                    f"alongside a Polygon) were passed in the same "
+                    f"FeatureCollection."
+                )
 
             log.info("Extracting features from Postgres...")
             if not customsql:

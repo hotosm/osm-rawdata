@@ -19,6 +19,7 @@
 #
 """Tests for data extract generation."""
 
+import json
 import logging
 import os
 import time
@@ -89,64 +90,92 @@ def test_parse_reparse_json():
     assert parsed_config == reparsed_config
 
 
-# FIXME enable test once all_geometry parsing is fixed
-# def test_all_geometry():
-#     """Test using the all_geometry flag."""
-#     geom = json.loads(json.dumps({"geometry": {
-#         "type": "Polygon",
-#         "coordinates": [
-#             [
-#                 [-10.786407, 6.360272],
-#                 [-10.787035, 6.36407],
-#                 [-10.781848, 6.369421],
-#                 [-10.781318, 6.369917],
-#                 [-10.780706, 6.369366],
-#                 [-10.78607, 6.360738],
-#                 [-10.786407, 6.360272],
-#             ]
-#         ],
-#     }}))
-#     expected_qc = {
-#         "select": {"nodes": [], "ways_poly": [], "ways_line": []},
-#         "tables": [],
-#         "where": {
-#             "nodes": [{"building": [], "op": "or"}, {"highway": [], "op": "or"}, {"waterway": [], "op": "or"}],
-#             "ways_poly": [{"building": [], "op": "or"}, {"highway": [], "op": "or"}, {"waterway": [], "op": "or"}],
-#             "ways_line": [{"building": [], "op": "or"}, {"highway": [], "op": "or"}, {"waterway": [], "op": "or"}],
-#         },
-#         "keep": [],
-#     }
+def test_all_geometry():
+    """Test using the all_geometry flag."""
+    geom = json.loads(
+        json.dumps(
+            {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [-10.786407, 6.360272],
+                            [-10.787035, 6.36407],
+                            [-10.781848, 6.369421],
+                            [-10.781318, 6.369917],
+                            [-10.780706, 6.369366],
+                            [-10.78607, 6.360738],
+                            [-10.786407, 6.360272],
+                        ]
+                    ],
+                }
+            }
+        )
+    )
+    expected_qc = {
+        "select": {"nodes": [], "ways_poly": [], "ways_line": [], "relations": []},
+        "tables": [],
+        "where": {
+            "nodes": [
+                {"building": [], "op": "or"},
+                {"highway": [], "op": "or"},
+                {"waterway": [], "op": "or"},
+            ],
+            "ways_poly": [
+                {"building": [], "op": "or"},
+                {"highway": [], "op": "or"},
+                {"waterway": [], "op": "or"},
+            ],
+            "ways_line": [
+                {"building": [], "op": "or"},
+                {"highway": [], "op": "or"},
+                {"waterway": [], "op": "or"},
+            ],
+            "relations": [],
+        },
+        "keep": [],
+    }
 
-#     # Test JSON
-#     json_config = BytesIO(
-#         json.dumps(
-#             {
-#                 "filters": {"tags": {"all_geometry": {"join_or": {"building": [], "highway": [], "waterway": []}}}},
-#             }
-#         ).encode()
-#     )
-#     qc = QueryConfig()
-#     json_config_parsed = qc.parseJson(json_config)
-#     assert json_config_parsed == expected_qc
+    # Test JSON
+    json_config = BytesIO(
+        json.dumps(
+            {
+                "filters": {
+                    "tags": {
+                        "all_geometry": {
+                            "join_or": {"building": [], "highway": [], "waterway": []}
+                        }
+                    }
+                },
+            }
+        ).encode()
+    )
+    qc = QueryConfig()
+    json_config_parsed = qc.parseJson(json_config)
+    assert json_config_parsed == expected_qc
 
-#     # Test JSON through PostgresClient
-#     pg = PostgresClient(
-#         "underpass",
-#         json_config,
-#     )
-#     assert pg.qc.config == expected_qc
+    # Test JSON through PostgresClient
+    pg = PostgresClient(
+        "underpass",
+        json_config,
+    )
+    assert pg.qc.config == expected_qc
 
-#     # Test JSON output for createJson
-#     raw_data_api_json = pg.createJson(qc, geom)
+    # Test JSON output for createJson collapses back to a single all_geometry
+    # filter, instead of duplicating the same tags across point/line/polygon
+    raw_data_api_json = json.loads(pg.createJson(qc, geom))
+    assert raw_data_api_json["filters"]["tags"] == {
+        "all_geometry": {"join_or": {"building": [], "highway": [], "waterway": []}}
+    }
 
-#     # Test YAML
-#     yaml_config_parsed = QueryConfig().parseYaml(f"{rootdir}/all_geometry.yaml")
-#     log.warning(yaml_config_parsed)
-#     assert yaml_config_parsed == expected_qc
+    # Test YAML
+    yaml_config_parsed = QueryConfig().parseYaml(f"{rootdir}/all_geometry.yaml")
+    log.warning(yaml_config_parsed)
+    assert yaml_config_parsed == expected_qc
 
-#     # Test YAML through PostgresClient
-#     pg = PostgresClient(
-#         "underpass",
-#         f"{rootdir}/all_geometry.yaml",
-#     )
-#     assert pg.qc.config == expected_qc
+    # Test YAML through PostgresClient
+    pg = PostgresClient(
+        "underpass",
+        f"{rootdir}/all_geometry.yaml",
+    )
+    assert pg.qc.config == expected_qc

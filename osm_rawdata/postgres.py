@@ -782,6 +782,14 @@ class PostgresClient(DatabaseAccess):
                 )
             elif isinstance(merged_geom, Polygon):
                 aoi_shape = Polygon(merged_geom.exterior)
+            else:
+                raise ValueError(
+                    f"AOI boundary must be a Polygon or MultiPolygon after "
+                    f"merging, got {type(merged_geom).__name__} instead. "
+                    f"This usually means mixed geometry types (e.g. a Point "
+                    f"alongside a Polygon) were passed in the same "
+                    f"FeatureCollection."
+                )
 
             log.info("Extracting features from Postgres...")
             if not customsql:
